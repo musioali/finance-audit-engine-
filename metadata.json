@@ -1,0 +1,6 @@
+{
+  "name": "پایش هوشمند ریسک مالی چرخه خرید تا پرداخت (P2P Risk Intelligence)",
+  "description": "موتور هوشمند پایش مستمر ریسک، کشف ناهنجاری، تطبیق موجودیت‌ها و میز کار حسابرسی در چرخه خرید تا پرداخت شرکت‌های پخش",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
