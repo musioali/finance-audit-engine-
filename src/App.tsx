@@ -348,9 +348,10 @@ export default function App() {
             e.preventDefault();
             setActiveTab('dashboard');
           }}
-          className="text-base font-bold tracking-tight text-slate-900 whitespace-nowrap shrink-0"
+          className="text-base font-bold text-slate-900 whitespace-nowrap shrink-0"
         >
-          پایش هوشمند ریسک مالی چرخه خرید تا پرداخت
+          ترازبان
+          <span className="font-medium text-slate-500 mr-2 text-sm">پایش ریسک خرید تا پرداخت</span>
         </a>
 
         {/* Zone 2: 4 clean single-line navigation links */}
@@ -412,8 +413,8 @@ export default function App() {
             <Play className="w-3.5 h-3.5 shrink-0" />
             <span>
               {isRunningBatch
-                ? 'در حال تحلیل پایپلاین...'
-                : 'بازاجرای پایپلاین پایلوت (۱۰۳ هزار رکورد)'}
+                ? 'در حال اجرا...'
+                : 'اجرای دوبارهٔ نمونه'}
             </span>
           </button>
         </div>
@@ -421,25 +422,12 @@ export default function App() {
 
       {/* Sub-header context metadata bar (Unboxed Zero-Pill Metadata) */}
       <div className="bg-slate-100/80 border-b border-slate-200 px-6 py-2.5 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium text-slate-800">دامنه MVP: چرخه خرید تا پرداخت (Procure-to-Pay)</span>
-          <span aria-hidden="true">·</span>
-          <span>دسترسی: فقط خواندنی (Read-Only بدون تغییر در ERP)</span>
-          <span aria-hidden="true">·</span>
-          <span className="font-mono-num">نسخه بسته داده: {summary.latest_batch.batch_id}</span>
-          <span aria-hidden="true">·</span>
-          <span className="font-mono-num">
-            رکوردهای تحلیل‌شده: {formatRials(summary.latest_batch.total_records)} رکورد در{' '}
-            {summary.latest_batch.execution_seconds.toLocaleString('fa-IR')} ثانیه
-          </span>
+        <div className="flex flex-wrap items-center gap-5">
+          <span className="font-medium text-slate-800">دامنه: چرخهٔ خرید تا پرداخت</span>
+          <span>دسترسی فقط‌خواندنی، بدون تغییر در ERP</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span>شاخص Precision@20 پایلوت:</span>
-          <span className="font-mono-num font-semibold text-emerald-700">
-            {summary.benchmark.precision_at_20.toLocaleString('fa-IR')}٪ (هدف PRD: حداقل ۶۰٪)
-          </span>
-          <span aria-hidden="true">·</span>
-          <span>ردیابی شواهد: ۱۰۰٪</span>
+        <div className="font-medium text-amber-800">
+          دادهٔ این صفحه‌ها ساختگی است. برای نتیجه روی دادهٔ خودتان، در «تطبیق موجودیت‌ها و کیفیت داده» فایل CSV بارگذاری کنید.
         </div>
       </div>
 
@@ -542,15 +530,13 @@ export default function App() {
 
               <div className="bg-white border border-slate-200 rounded-xl p-5">
                 <div className="text-xs text-slate-500 font-medium">
-                  عملکرد موتور و کیفیت داده پایلوت
+                  دقت موتور
                 </div>
-                <div className="text-2xl font-bold text-slate-900 mt-2 font-mono-num">
-                  {summary.benchmark.precision_at_20.toLocaleString('fa-IR')}٪ Precision@20
+                <div className="text-lg font-bold text-slate-900 mt-2">
+                  هنوز روی دادهٔ واقعی سنجیده نشده
                 </div>
-                <div className="text-xs text-slate-500 mt-2 flex items-center gap-1.5 font-mono-num">
-                  <span>زمان تحلیل: {summary.benchmark.execution_seconds.toLocaleString('fa-IR')} ثانیه</span>
-                  <span aria-hidden="true">·</span>
-                  <span>پوشش فیلدها: {summary.benchmark.essential_field_coverage_pct.toLocaleString('fa-IR')}٪</span>
+                <div className="text-xs text-slate-500 mt-2">
+                  در پایلوت اندازه گرفته می‌شود: سهم هشدارهای تأییدشده در ۲۰ هشدار اول (هدف: دست‌کم ۶۰٪)
                 </div>
               </div>
             </div>
@@ -1553,9 +1539,6 @@ export default function App() {
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-mono-num text-emerald-700 font-semibold">
-                  پوشش فیلدهای ضروری: {summary.benchmark.essential_field_coverage_pct.toLocaleString('fa-IR')}٪ (هدف PRD: حداقل ۹۰٪)
-                </span>
               </div>
 
               <div className="overflow-x-auto">

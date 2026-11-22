@@ -1201,7 +1201,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
     },
   ];
 
-  const elapsedSec = Number(((performance.now() - t0) / 1000 + 2.38).toFixed(2));
+  const elapsedSec = Number(((performance.now() - t0) / 1000).toFixed(2));
 
   const sortedAlerts = [...alerts].sort(
     (a, b) => b.risk_score - a.risk_score || b.financial_exposure - a.financial_exposure
