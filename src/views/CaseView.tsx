@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, FileText } from 'lucide-react';
 import { AlertAuditLog, AlertStatus, RiskAlert } from '../types';
 import { formatMillionRials, formatRials, STATUS_LABELS, WAREHOUSE_NAMES } from '../engine/p2pEngine';
-import { Button, cx, Field, inputClass, PriorityChip, Panel, Reveal, SectionTitle, StatusChip, Vial } from '../ui';
+import { Button, Chip, cx, Field, inputClass, PriorityChip, Panel, Reveal, SectionTitle, StatusChip, Vial } from '../ui';
 
 export const AUDITORS = [
   { name: 'م. رضایی', role: 'حسابرس ارشد' },
@@ -87,6 +87,7 @@ export default function CaseView({
               <div className="flex flex-wrap gap-2">
                 <PriorityChip priority={alert.priority} />
                 <StatusChip status={alert.status} />
+                {alert.source_fa && <Chip tone="level">{alert.source_fa}</Chip>}
               </div>
               <h1 className="mt-4 text-[28px] font-extrabold leading-[1.4] md:text-[32px]">{alert.rule_title_fa}</h1>
               <p className="mt-3 text-[16px] leading-8 text-ink/85">{alert.summary_fa}</p>

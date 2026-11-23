@@ -50,6 +50,14 @@ export default function Guide({
           حسابرسی معمولاً ماه‌ها بعد از پرداخت و روی چند نمونه انجام می‌شود. ترازبان همهٔ سندهای خرید تا پرداخت را
           بررسی می‌کند و هر مورد غیرعادی را با شواهدش، به ترتیب اهمیت، جلوی حسابرس می‌گذارد.
         </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Button icon={<ArrowLeft className="h-4 w-4" strokeWidth={1.5} />} onClick={onCase}>
+            باز کردن یک پرونده
+          </Button>
+          <Button variant="ghost" onClick={onOverview}>
+            دیدن نمای کلی
+          </Button>
+        </div>
       </Reveal>
 
       <section aria-labelledby="how" className="mt-14">
@@ -80,8 +88,10 @@ export default function Guide({
         <Panel inner="px-6 py-6 md:px-8">
           <h2 className="text-[18px] font-bold">در این نسخهٔ نمایشی</h2>
           <p className="mt-2 text-[15px] leading-8 text-muted">
-            داده و هشدارهایی که می‌بینید نمونهٔ ساختگی‌اند و دستی نوشته شده‌اند تا همهٔ صفحه‌ها دیده شوند. موتور ترازبان
-            روی سرور شرکت اجرا می‌شود و این صفحه به آن وصل نیست.
+            داده ساختگی است. هشدارهایی که برچسب <span className="font-semibold text-level">ساختهٔ موتور</span> دارند را خود
+            موتور ترازبان، هنگام ساخت همین صفحه، روی این داده پیدا کرده است؛ یکی از آن‌ها نشان می‌دهد ترازبان از دو تصمیم
+            قبلی حسابرس چه یاد گرفته. بقیهٔ هشدارها دستی نوشته شده‌اند تا همهٔ صفحه‌ها دیده شوند. موتور روی سرور خود شرکت
+            اجرا می‌شود و این صفحه به آن وصل نیست، پس فایل خودتان را اینجا نمی‌توانید بررسی کنید.
           </p>
           <div className="mt-5 text-[14px] font-bold">روی فایل واقعی کار می‌کند</div>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -101,14 +111,9 @@ export default function Guide({
       </Reveal>
 
       <Reveal className="mt-10 flex flex-col items-center gap-3 text-center">
-        <div className="flex flex-wrap justify-center gap-3">
-          <Button icon={<ArrowLeft className="h-4 w-4" strokeWidth={1.5} />} onClick={onCase}>
-            باز کردن یک پرونده
-          </Button>
-          <Button variant="ghost" onClick={onOverview}>
-            دیدن نمای کلی
-          </Button>
-        </div>
+        <Button icon={<ArrowLeft className="h-4 w-4" strokeWidth={1.5} />} onClick={onCase}>
+          باز کردن یک پرونده
+        </Button>
         <a
           href={repoUrl}
           className="inline-flex min-h-11 items-center rounded-full px-4 text-[14px] font-semibold text-level underline-offset-4 hover:underline"

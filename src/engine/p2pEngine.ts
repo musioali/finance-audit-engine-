@@ -270,7 +270,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       p2p_chain: [
         {
           stage: 'PR',
-          stage_label_fa: '۱. درخواست خرید',
+          stage_label_fa: 'درخواست خرید',
           record_id: 'PR-104810',
           date_str: '1404/11/11',
           amount_rials: 432_000_000,
@@ -281,7 +281,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'PO',
-          stage_label_fa: '۲. سفارش خرید (تفکیک‌شده ۱)',
+          stage_label_fa: 'سفارش خرید (تفکیک‌شده ۱)',
           record_id: 'PO-SPL-001-A',
           date_str: '1404/11/12',
           amount_rials: 142_000_000,
@@ -293,7 +293,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'PO',
-          stage_label_fa: '۲. سفارش خرید (تفکیک‌شده ۲ و ۳)',
+          stage_label_fa: 'سفارش خرید (تفکیک‌شده ۲ و ۳)',
           record_id: 'PO-SPL-001-B & C',
           date_str: '1404/11/13',
           amount_rials: 290_000_000,
@@ -305,7 +305,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'INVOICE',
-          stage_label_fa: '۴. فاکتور تأمین‌کننده',
+          stage_label_fa: 'فاکتور تأمین‌کننده',
           record_id: 'INV-109842',
           date_str: '1404/11/16',
           amount_rials: 432_000_000,
@@ -356,7 +356,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       p2p_chain: [
         {
           stage: 'PO',
-          stage_label_fa: '۲. سفارش خرید مرجع',
+          stage_label_fa: 'سفارش خرید مرجع',
           record_id: 'PO-008412',
           date_str: '1404/11/10',
           amount_rials: 385_000_000,
@@ -367,7 +367,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'INVOICE',
-          stage_label_fa: '۴. فاکتور اصلی (نوبت اول)',
+          stage_label_fa: 'فاکتور اصلی (نوبت اول)',
           record_id: 'INV-008412',
           date_str: '1404/11/14',
           amount_rials: 385_000_000,
@@ -378,7 +378,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'INVOICE',
-          stage_label_fa: '۴. فاکتور مشابه (ثبت مجدد)',
+          stage_label_fa: 'فاکتور مشابه (ثبت مجدد)',
           record_id: 'INV-DUP-019',
           date_str: '1404/11/17',
           amount_rials: 385_000_000,
@@ -442,7 +442,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'INVOICE',
-          stage_label_fa: '۴. فاکتور تأمین‌کننده',
+          stage_label_fa: 'فاکتور تأمین‌کننده',
           record_id: 'INV-004120',
           date_str: '1404/11/22',
           amount_rials: 650_000_000,
@@ -453,7 +453,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'PAYMENT',
-          stage_label_fa: '۷. اجرای پرداخت کلان',
+          stage_label_fa: 'اجرای پرداخت کلان',
           record_id: 'PAY-BANK-CHG-01',
           date_str: '1404/11/24',
           amount_rials: 650_000_000,
@@ -516,7 +516,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'PAYMENT',
-          stage_label_fa: '۷. تأیید و اجرای پرداخت',
+          stage_label_fa: 'تأیید و اجرای پرداخت',
           record_id: 'PAY-AUTH-004',
           date_str: '1404/11/25',
           amount_rials: 490_000_000,
@@ -629,7 +629,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       p2p_chain: [
         {
           stage: 'PO',
-          stage_label_fa: '۲. سفارش خرید (PO)',
+          stage_label_fa: 'سفارش خرید (PO)',
           record_id: 'ناموجود (NULL)',
           date_str: '—',
           amount_rials: 0,
@@ -641,7 +641,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'GR',
-          stage_label_fa: '۳. رسید انبار (GR)',
+          stage_label_fa: 'رسید انبار (GR)',
           record_id: 'ناموجود (NULL)',
           date_str: '—',
           amount_rials: 0,
@@ -653,7 +653,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'INVOICE',
-          stage_label_fa: '۴. ثبت و تأیید فاکتور',
+          stage_label_fa: 'ثبت و تأیید فاکتور',
           record_id: 'INV-NOPO-007',
           date_str: '1404/11/20',
           amount_rials: 275_000_000,
@@ -708,7 +708,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       p2p_chain: [
         {
           stage: 'PO',
-          stage_label_fa: '۲. سفارش خرید با انحراف قیمت',
+          stage_label_fa: 'سفارش خرید با انحراف قیمت',
           record_id: 'PO-PRC-004',
           date_str: '1404/11/22',
           amount_rials: 176_640_000,
@@ -720,7 +720,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'GR',
-          stage_label_fa: '۳. رسید انبار اصفهان',
+          stage_label_fa: 'رسید انبار اصفهان',
           record_id: 'GR-PRC-004',
           date_str: '1404/11/24',
           actor_or_party: 'WH-ISF-01',
@@ -773,7 +773,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       p2p_chain: [
         {
           stage: 'PO',
-          stage_label_fa: '۲. سفارش خرید',
+          stage_label_fa: 'سفارش خرید',
           record_id: 'PO-006210',
           date_str: '1404/11/05',
           amount_rials: 340_000_000,
@@ -784,7 +784,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'GR',
-          stage_label_fa: '۳. رسید انبار (تحویل ناقص)',
+          stage_label_fa: 'رسید انبار (تحویل ناقص)',
           record_id: 'GR-006210-L1',
           date_str: '1404/11/09',
           amount_rials: 231_200_000,
@@ -796,7 +796,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'INVOICE',
-          stage_label_fa: '۴. فاکتور تأییدشده (مبلغ کامل)',
+          stage_label_fa: 'فاکتور تأییدشده (مبلغ کامل)',
           record_id: 'INV-006210',
           date_str: '1404/11/12',
           amount_rials: 340_000_000,
@@ -845,7 +845,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       p2p_chain: [
         {
           stage: 'INVOICE',
-          stage_label_fa: '۴. ثبت اول (ارقام لاتین)',
+          stage_label_fa: 'ثبت اول (ارقام لاتین)',
           record_id: 'INV-001600',
           date_str: '1404/10/18',
           amount_rials: 216_000_000,
@@ -856,7 +856,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'INVOICE',
-          stage_label_fa: '۴. ثبت دوم (ارقام فارسی)',
+          stage_label_fa: 'ثبت دوم (ارقام فارسی)',
           record_id: 'INV-DUP-008',
           date_str: '1404/10/19',
           amount_rials: 216_000_000,
@@ -917,7 +917,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         },
         {
           stage: 'PO',
-          stage_label_fa: '۲. سفارش‌های متمرکز (۳ فقره)',
+          stage_label_fa: 'سفارش‌های متمرکز (۳ فقره)',
           record_id: 'PO-014810..12',
           date_str: '1404/11/20',
           amount_rials: 390_000_000,
@@ -968,7 +968,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       p2p_chain: [
         {
           stage: 'PO',
-          stage_label_fa: '۲. سفارش خرید چای ویژه',
+          stage_label_fa: 'سفارش خرید چای ویژه',
           record_id: 'PO-PRC-011',
           date_str: '1404/11/08',
           amount_rials: 118_000_000,

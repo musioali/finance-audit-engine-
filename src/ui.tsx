@@ -252,6 +252,7 @@ export function AlertRow({ alert, onOpen }: { alert: RiskAlert; onOpen: (a: Risk
         <div className="mt-2 flex flex-wrap gap-2">
           <PriorityChip priority={alert.priority} />
           <StatusChip status={alert.status} />
+          {alert.source_fa && <Chip tone="level">{alert.source_fa}</Chip>}
         </div>
       </div>
       <div className="min-w-0 text-[14px] leading-7">

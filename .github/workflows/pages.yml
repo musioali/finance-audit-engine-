@@ -1,4 +1,5 @@
-# Public demo on GitHub Pages: the interface with the sample data only (no engine, no real files).
+# Public demo on GitHub Pages: the interface with sample data and no server behind it. Before the build, the
+# engine runs on made-up invoices (server/tarazban/demo.py) and its alerts ship with the page.
 # Rebuilt on every push to main. Pages must be set once to "GitHub Actions" in Settings > Pages.
 name: Demo on GitHub Pages
 
@@ -25,6 +26,14 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: server/requirements.txt
+      - run: pip install -r server/requirements.txt
+      - run: python -m tarazban.demo ../public/demo-alerts.json
+        working-directory: server
       - run: npm ci
       - run: npm run build
         env:

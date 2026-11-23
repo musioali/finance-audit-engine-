@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { AlertAuditLog, AlertStatus, RiskAlert } from './types';
-import { confirmMapping, DEMO, fetchState, Ingested, NeedsMapping, saveDecision, ServerState, uploadFile } from './api';
+import { confirmMapping, DEMO, fetchState, Ingested, jalaliTime, NeedsMapping, saveDecision, ServerState, uploadFile } from './api';
 import {
   computeDashboardSummary,
   createEmptyEngineState,
@@ -96,6 +96,26 @@ export default function App() {
         if (!s.files.length) return;
         setEngine(fromServer(s));
         setSource((cur) => (cur.sample ? cur : { sample: false, files: s.files }));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  // The public demo has no engine behind it; the build runs the engine on made-up invoices (server/tarazban/demo.py)
+  // and ships its alerts, which join the hand-written sample.
+  useEffect(() => {
+    if (!DEMO) return;
+    fetch(`${import.meta.env.BASE_URL}demo-alerts.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s: Pick<ServerState, 'alerts' | 'audit_logs'> | null) => {
+        if (!s) return;
+        const alerts = s.alerts.map((a) => ({ ...a, created_at: jalaliTime(a.created_at) }));
+        const logs = s.audit_logs.map((l) => ({ ...l, created_at: jalaliTime(l.created_at) }));
+        const weight = (a: RiskAlert) => a.risk_score * a.confidence_score;
+        setEngine((prev) => ({
+          ...prev,
+          alerts: [...prev.alerts, ...alerts].sort((a, b) => weight(b) - weight(a)),
+          auditLogs: [...logs, ...prev.auditLogs],
+        }));
       })
       .catch(() => undefined);
   }, []);
@@ -274,6 +294,7 @@ export default function App() {
       <DataView
         files={source.files}
         sample={source.sample}
+        demo={DEMO}
         quality={engine.qualityReports}
         candidates={engine.entityCandidates}
         onFiles={onFiles}

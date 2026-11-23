@@ -46,6 +46,8 @@ export interface RiskAlert {
   confidence_score: number;
   /** Where the confidence comes from: the signal's strength, or the auditors' earlier decisions. */
   confidence_basis_fa?: string;
+  /** Set on alerts the engine itself produced for the public demo. */
+  source_fa?: string;
   financial_exposure: number;
   priority: AlertPriority;
   status: AlertStatus;

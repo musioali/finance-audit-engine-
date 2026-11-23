@@ -20,6 +20,7 @@ const TEMPLATES = [
 export default function DataView({
   files,
   sample,
+  demo = false,
   quality,
   candidates,
   onFiles,
@@ -29,6 +30,8 @@ export default function DataView({
 }: {
   files: string[];
   sample: boolean;
+  /** The public demo has no engine to send files to. */
+  demo?: boolean;
   quality: TableQualityReport[];
   candidates: EntityCandidate[];
   onFiles: (files: FileList) => void;
@@ -47,6 +50,20 @@ export default function DataView({
         lead="فایل‌ها روی سرور ترازبان در خود شرکت بررسی و نگه داشته می‌شوند و بیرون نمی‌روند. ترازبان چیزی را در نرم‌افزار حسابداری تغییر نمی‌دهد."
       />
 
+      {demo ? (
+        <Reveal>
+          <Panel inner="flex flex-col items-center px-6 py-10 text-center">
+            <span className="glass-tile flex h-14 w-14 items-center justify-center rounded-full">
+              <FileSpreadsheet className="h-6 w-6 text-ink" strokeWidth={1.5} />
+            </span>
+            <div className="mt-5 text-[19px] font-bold">در این نسخهٔ نمایشی فایل بارگذاری نمی‌شود</div>
+            <p className="mt-2 max-w-xl text-[15px] leading-8 text-muted">
+              فایل‌ها را موتور ترازبان روی سرور خود شرکت بررسی می‌کند و این صفحه به آن وصل نیست. قالب فایل‌ها را از پایین
+              می‌توانید دانلود کنید تا ببینید ترازبان چه ستون‌هایی می‌خواند.
+            </p>
+          </Panel>
+        </Reveal>
+      ) : (
       <Reveal>
         <Panel inner="p-3">
           <div
@@ -99,6 +116,7 @@ export default function DataView({
           </div>
         </Panel>
       </Reveal>
+      )}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {TEMPLATES.map((t, i) => (
@@ -120,12 +138,14 @@ export default function DataView({
                 <Button variant="ghost" icon={<Download className="h-4 w-4" strokeWidth={1.5} />} onClick={() => onDownload(t.file)}>
                   دانلود قالب
                 </Button>
-                <Button variant="quiet" onClick={() => onTemplate(t.file)}>
-                  <span className="inline-flex items-center gap-2">
-                    <Play className="h-4 w-4" strokeWidth={1.5} />
-                    اجرای قالب نمونه
-                  </span>
-                </Button>
+                {!demo && (
+                  <Button variant="quiet" onClick={() => onTemplate(t.file)}>
+                    <span className="inline-flex items-center gap-2">
+                      <Play className="h-4 w-4" strokeWidth={1.5} />
+                      اجرای قالب نمونه
+                    </span>
+                  </Button>
+                )}
               </div>
             </Panel>
           </Reveal>

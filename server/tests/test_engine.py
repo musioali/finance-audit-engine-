@@ -8,7 +8,7 @@ import random
 import time
 import unittest
 
-from tarazban import learning, pipeline
+from tarazban import demo, learning, pipeline
 from tarazban.store import connect
 from tarazban.text import day_number, norm_text, parse_amount, read_csv, weekday
 
@@ -265,6 +265,18 @@ class Engine(unittest.TestCase):
         self.assertGreater(high, 0.8)
         self.assertLess(low, 0.2)
         self.assertEqual(factors[0], {'feature': 'times_usual', 'higher': True, 'raises': True})
+
+    # ── the public demo ──
+
+    def test_the_demo_ships_real_engine_alerts_of_each_kind(self):
+        out = demo.build()
+        rules = {a['rule_id'] for a in out['alerts']}
+        self.assertTrue({'P0_DUPLICATE_INVOICE', 'P0_AMOUNT_OUTLIER', 'P0_UNUSUAL_PATTERN'} <= rules)
+        self.assertTrue(all(a['source_fa'] == 'ساختهٔ موتور' for a in out['alerts']))
+        learned = [a for a in out['alerts'] if a['status'] == 'NEW' and a['supplier_id'] == 'SUP-KIAN']
+        self.assertEqual(len(learned), 1)
+        self.assertIn('برای همین تأمین‌کننده، هر ۲ هشدار این نوع نادرست دانسته شده است.', learned[0]['why_flagged_fa'])
+        self.assertEqual(len(out['audit_logs']), 2)
 
     # ── mapping ──
 
