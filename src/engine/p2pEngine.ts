@@ -23,14 +23,14 @@ export const RULE_METADATA: Record<
     description_fa: 'تشخیص شماره فاکتور تکراری یا مشابه با تفاوت جزئی در کاراکتر/تاریخ برای یک تأمین‌کننده و مبلغ یکسان',
   },
   P0_SPLIT_PO: {
-    title_fa: 'شکستن سفارش یا پرداخت (Split PO)',
+    title_fa: 'شکستن سفارش زیر سقف تأیید',
     category_fa: 'کنترل سقف اختیارات خرید',
     version: '1.0.0',
     description_fa: 'شناسایی چند سفارش خرید مرتبط در بازه ۳ روزه زیر سقف مجاز که مجموع آن‌ها از سقف اختیار تأییدکننده عبور می‌کند',
   },
   P0_3WAY_MATCH: {
     title_fa: 'مغایرت سه‌جانبه سفارش، رسید و فاکتور',
-    category_fa: 'تطبیق ۳جانبه (3-Way Match)',
+    category_fa: 'تطبیق سه‌جانبه',
     version: '1.0.0',
     description_fa: 'فاکتور بدون سفارش خرید معتبر، یا مغایرت مقدار/مبلغ فاکتور با سفارش خرید و رسید انبار بیش از تلرانس ۲٪',
   },
@@ -65,17 +65,17 @@ export const WAREHOUSE_NAMES: Record<string, string> = {
 export const STATUS_LABELS: Record<AlertStatus, string> = {
   NEW: 'جدید',
   IN_REVIEW: 'در حال بررسی',
-  NEEDS_INFO: 'نیازمند اطلاعات بیشتر',
-  CONFIRMED: 'تأییدشده برای رسیدگی',
-  FALSE_POSITIVE: 'ردشده (هشدار کاذب)',
+  NEEDS_INFO: 'نیازمند اطلاعات',
+  CONFIRMED: 'ناهنجاری تأییدشده',
+  FALSE_POSITIVE: 'هشدار نادرست',
   CLOSED: 'بسته‌شده',
 };
 
 export const PRIORITY_LABELS: Record<AlertPriority, string> = {
-  CRITICAL: 'بحرانی (P1)',
-  HIGH: 'بالا (P2)',
-  MEDIUM: 'متوسط (P3)',
-  LOW: 'پایین (P4)',
+  CRITICAL: 'بحرانی',
+  HIGH: 'بالا',
+  MEDIUM: 'متوسط',
+  LOW: 'پایین',
 };
 
 const PERSIAN_DIGITS_MAP: Record<string, string> = {
@@ -204,6 +204,49 @@ const ITEMS_CATALOG = [
   { code: 'ITM-107', name: 'چای سیاه شکسته ممتاز ۵۰۰ گرمی', unit: 'بسته', basePrice: 3_150_000 },
   { code: 'ITM-108', name: 'کارتن بسته‌بندی ۵ لایه صادراتی', unit: 'عدد', basePrice: 340_000 },
 ];
+
+export const CSV_TEMPLATES: Record<string, string> = {
+  'invoices.csv': [
+    'invoice_id,invoice_number,po_id,supplier_id,supplier_name,invoice_date,total_amount,warehouse_code',
+    'INV-9001,F-1404-9901,PO-9001,SUP-0042,صنايع غذايي بهاران زاگرس,۱۴۰۴/۱۱/۱۴,385000000,WH-ISF-01',
+    'INV-9002,F-1404-9901-A,PO-9001,SUP-0042,صنایع غذایی بهاران زاگرس,1404/11/16,385000000,WH-ISF-01',
+    'INV-9003,NOPO-4412,,SUP-0037,تولیدی صدف خزر,1404/11/20,275000000,WH-MSH-01',
+  ].join('\n'),
+  'purchase_orders.csv': [
+    'po_id,supplier_id,supplier_name,item_code,unit,warehouse_code,quantity,unit_price,line_amount,po_date,approved_by,approval_limit_rials',
+    'PO-SPL-101,SUP-0014,بازرگانی کاسپین پخش البرز,ITM-102,کیسه,WH-TEH-01,10,14200000,142000000,1404/11/12,USR-012,150000000',
+    'PO-SPL-102,SUP-0014,بازرگانی کاسپین پخش البرز,ITM-102,کیسه,WH-TEH-01,10,14500000,145000000,1404/11/13,USR-012,150000000',
+    'PO-PRC-201,SUP-0064,پخش پارس گستر,ITM-101,بطری,WH-ISF-01,100,1766000,176600000,1404/11/22,USR-026,800000000',
+  ].join('\n'),
+};
+
+export function createEmptyEngineState(): EngineState {
+  return {
+    batchId: '',
+    sourceSystem: '',
+    dataVersion: '',
+    receivedAt: '',
+    totalRecords: 0,
+    executionSeconds: 0,
+    alerts: [],
+    auditLogs: [],
+    entityCandidates: [],
+    qualityReports: [],
+    benchmark: {
+      total_records_analyzed: 0,
+      execution_seconds: 0,
+      sla_target_seconds: 900,
+      precision_at_20: 0,
+      target_precision_at_20: 60,
+      seeded_anomalies_count: 0,
+      detected_true_positives: 0,
+      evidence_traceability_pct: 0,
+      source_attribution_pct: 0,
+      essential_field_coverage_pct: 0,
+    },
+    csvTemplates: CSV_TEMPLATES,
+  };
+}
 
 export function generateSyntheticEngineState(scaleOrders: number = 15000): EngineState {
   const t0 = performance.now();
@@ -1108,7 +1151,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       right_raw: 'پخش بهاران زاگرس',
       right_iban_masked: 'IR7701************0212',
       similarity_score: 0.875,
-      match_reason_fa: 'شباهت نام در سیستم خرید و سیستم مالی؛ نیازمند تأیید انسانی طبق بند ۴.۲ PRD',
+      match_reason_fa: 'شباهت نام در سیستم خرید و سیستم مالی',
       shared_attribute: 'کد اقتصادی مشابه',
       review_status: 'PENDING_HUMAN_REVIEW',
     },
@@ -1131,7 +1174,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
     },
     {
       table_name: 'purchase_requests.csv',
-      table_label_fa: 'درخواست‌های خرید (PR)',
+      table_label_fa: 'درخواست‌های خرید',
       row_count: prCount,
       required_coverage_pct: 98.7,
       normalized_persian_count: 3420,
@@ -1145,7 +1188,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
     },
     {
       table_name: 'purchase_orders.csv',
-      table_label_fa: 'سفارش‌های خرید (PO Lines)',
+      table_label_fa: 'سفارش‌های خرید',
       row_count: poLineCount,
       required_coverage_pct: 99.5,
       normalized_persian_count: 8910,
@@ -1160,7 +1203,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
     },
     {
       table_name: 'goods_receipts.csv',
-      table_label_fa: 'رسیدهای انبار (GR Lines)',
+      table_label_fa: 'رسیدهای انبار',
       row_count: grLineCount,
       required_coverage_pct: 99.1,
       normalized_persian_count: 2100,
@@ -1223,20 +1266,6 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
     essential_field_coverage_pct: 99.4,
   };
 
-  const csvTemplates: Record<string, string> = {
-    'invoices.csv': [
-      'invoice_id,invoice_number,po_id,supplier_id,supplier_name,invoice_date,total_amount,warehouse_code',
-      'INV-9001,F-1404-9901,PO-9001,SUP-0042,صنايع غذايي بهاران زاگرس,۱۴۰۴/۱۱/۱۴,385000000,WH-ISF-01',
-      'INV-9002,F-1404-9901-A,PO-9001,SUP-0042,صنایع غذایی بهاران زاگرس,1404/11/16,385000000,WH-ISF-01',
-      'INV-9003,NOPO-4412,,SUP-0037,تولیدی صدف خزر,1404/11/20,275000000,WH-MSH-01',
-    ].join('\n'),
-    'purchase_orders.csv': [
-      'po_id,supplier_id,supplier_name,item_code,unit,warehouse_code,quantity,unit_price,line_amount,po_date,approved_by,approval_limit_rials',
-      'PO-SPL-101,SUP-0014,بازرگانی کاسپین پخش البرز,ITM-102,کیسه,WH-TEH-01,10,14200000,142000000,1404/11/12,USR-012,150000000',
-      'PO-SPL-102,SUP-0014,بازرگانی کاسپین پخش البرز,ITM-102,کیسه,WH-TEH-01,10,14500000,145000000,1404/11/13,USR-012,150000000',
-      'PO-PRC-201,SUP-0064,پخش پارس گستر,ITM-101,بطری,WH-ISF-01,100,1766000,176600000,1404/11/22,USR-026,800000000',
-    ].join('\n'),
-  };
 
   return {
     batchId,
@@ -1250,7 +1279,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
     entityCandidates,
     qualityReports,
     benchmark,
-    csvTemplates,
+    csvTemplates: CSV_TEMPLATES,
   };
 }
 
