@@ -1,8 +1,8 @@
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { AlertAuditLog, AlertStatus, RiskAlert } from './types';
+import { analyzeUploadedCsvContent } from './engine/upload';
 import {
-  analyzeUploadedCsvContent,
   computeDashboardSummary,
   createEmptyEngineState,
   CSV_TEMPLATES,

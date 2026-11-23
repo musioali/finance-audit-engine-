@@ -162,12 +162,13 @@ export default function DataView({
                         key={col}
                         className={cx(
                           'num rounded-full px-3 py-0.5 text-[13px]',
-                          m.null_or_empty_count > 0 ? 'bg-amber-tint text-amber' : 'bg-white text-muted ring-1 ring-ink/[0.06]'
+                          m.null_or_empty_count > 0 || (m.invalid_count ?? 0) > 0 ? 'bg-amber-tint text-amber' : 'bg-white text-muted ring-1 ring-ink/[0.06]'
                         )}
                       >
                         <span dir="ltr">{col}</span>
                         {m.null_or_empty_count > 0 && `: ${formatRials(m.null_or_empty_count)} خالی`}
                         {m.zero_value_count > 0 && `، ${formatRials(m.zero_value_count)} صفر`}
+                        {(m.invalid_count ?? 0) > 0 && `، ${formatRials(m.invalid_count ?? 0)} نامعتبر`}
                       </span>
                     ))}
                   </div>

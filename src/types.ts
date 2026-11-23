@@ -70,6 +70,7 @@ export interface ColumnQualityMetric {
   coverage_pct: number;
   null_or_empty_count: number;
   zero_value_count: number;
+  invalid_count?: number;
 }
 
 export interface TableQualityReport {
