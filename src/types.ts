@@ -13,6 +13,7 @@ export type P0RuleId =
   | 'P0_SPLIT_PO'
   | 'P0_3WAY_MATCH'
   | 'P0_PRICE_DEVIATION'
+  | 'P0_AMOUNT_OUTLIER'
   | 'P0_SUPPLIER_RISK'
   | 'P0_APPROVAL_DEVIATION';
 

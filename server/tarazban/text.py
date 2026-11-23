@@ -3,6 +3,7 @@ import csv
 import io
 import re
 from datetime import date
+from functools import lru_cache
 
 _DIGITS = str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789')
 _FA_DIGITS = str.maketrans('0123456789,', '۰۱۲۳۴۵۶۷۸۹٬')
@@ -23,6 +24,12 @@ def norm_text(value) -> str:
 def fa(n) -> str:
     """A number the way the app shows it: rounded, Persian digits, ٬ between thousands."""
     return f'{round(n):,}'.translate(_FA_DIGITS)
+
+
+def fa1(n) -> str:
+    """A ratio with one decimal, the way the app shows it: ۸٫۳, or ۱۲ when it is whole."""
+    whole, _, tenth = f'{n:,.1f}'.partition('.')
+    return (whole if tenth == '0' else f'{whole}٫{tenth}').translate(_FA_DIGITS)
 
 
 def parse_amount(raw):
@@ -63,6 +70,7 @@ _GREGORIAN_SHIFT = _jalali_days(1404, 1, 1) - (date(2025, 3, 21) - _EPOCH).days
 _DATE = re.compile(r'^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})')
 
 
+@lru_cache(maxsize=8192)  # a file has a few hundred distinct dates over many thousand rows
 def day_number(raw):
     """A day count for a Jalali (1404/03/01) or Gregorian (2025-05-22) date, or None if it is not a date."""
     if not raw:

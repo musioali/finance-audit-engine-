@@ -15,7 +15,7 @@ class PriceJump:
     version = '1.2.0'
     kind = 'po_line'
 
-    def run(self, rows: list[dict]) -> list[Finding]:
+    def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
         by_item = defaultdict(list)
         for r in rows:
             price = parse_amount(r.get('unit_price'))

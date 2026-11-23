@@ -4,7 +4,7 @@ auditor reads. A language model can later take this module's place and write fro
 which keeps every number it states tied to a row of data.
 """
 from .detectors import supplier_label
-from .text import fa, show_date
+from .text import fa, fa1, show_date
 
 
 def _how_duplicate(f: dict) -> str:
@@ -30,6 +30,9 @@ def describe(detector: str, f: dict, where: list[str]) -> tuple[str, list[str]]:
         ]
         if f['days_apart'] is not None:
             why.append('هر دو در یک روز ثبت شده‌اند.' if f['days_apart'] == 0 else f'تاریخ دو فاکتور {fa(f["days_apart"])} روز فاصله دارد.')
+        if f.get('routine_invoices'):
+            why.append(f'این تأمین‌کننده همین مبلغ را {fa(f["routine_invoices"])} بار فاکتور کرده است، '
+                       f'معمولاً با فاصلهٔ {fa(f["routine_gap_days"])} روز.')
         return f'احتمال ثبت دوبارهٔ فاکتور {n1} برای {f["supplier"]}: {how}.', why
 
     if detector == 'P0_3WAY_MATCH':
@@ -65,6 +68,18 @@ def describe(detector: str, f: dict, where: list[str]) -> tuple[str, list[str]]:
             ],
         )
 
+    if detector == 'P0_AMOUNT_OUTLIER':
+        n = fa(f['previous_invoices'])
+        return (
+            f'فاکتور {f["invoice_number"]} از {f["supplier"]} {fa1(f["times_usual"])} برابر مبلغ معمول این تأمین‌کننده است.',
+            [
+                f'مبلغ این فاکتور {fa(f["amount_rials"])} ریال است، در {where[0]}.',
+                f'میانهٔ {n} فاکتور قبلی همین تأمین‌کننده {fa(f["usual_median_rials"])} ریال است '
+                f'و بزرگ‌ترینشان {fa(f["previous_max_rials"])} ریال بوده است.',
+                'مبلغ معمول از سابقهٔ خود این تأمین‌کننده یاد گرفته شده است، نه از یک سقف ثابت.',
+            ],
+        )
+
     return 'یافتهٔ تازه', []
 
 
@@ -76,6 +91,9 @@ def _step_words(detector: str, step: dict, rec: dict, facts: dict) -> tuple[str,
         return label, f'شمارهٔ فاکتور در فایل: {rec.get("invoice_number", "")}', None
     if role == 'part':
         return 'سفارش خرید', f'{fa(step["facts"]["share_of_limit"] * 100)}٪ سقف تأیید', f'تأیید: {facts["approver"]}'
+    if role == 'outlier':
+        s = step['facts']
+        return 'فاکتور با مبلغ غیرعادی', f'{fa1(s["times_usual"])} برابر میانهٔ فاکتورهای قبلی ({fa(s["usual"])} ریال)', None
     if role == 'price':
         s = step['facts']
         return 'سفارش خرید با قیمت بالاتر', f'قیمت واحد {fa(s["unit_price"])} ریال، میانهٔ قبلی {fa(s["median"])} ریال', None

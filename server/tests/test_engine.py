@@ -18,6 +18,11 @@ def pad(n: int) -> str:
     return f'{n:02d}'
 
 
+def from_mehr(days: int) -> str:
+    """A Jalali date `days` after 1404/07/01 (Mehr); months 7 to 11 have 30 days."""
+    return f'1404/{pad(7 + days // 30)}/{pad(1 + days % 30)}'
+
+
 class Engine(unittest.TestCase):
     def setUp(self):
         self.conn = connect(':memory:')
@@ -133,6 +138,52 @@ class Engine(unittest.TestCase):
         self.assertEqual(q['columns']['total_amount']['invalid_count'], 1)
         self.assertEqual(q['columns']['invoice_date']['invalid_count'], 1)
         self.assertLess(q['required_coverage_pct'], 100)
+
+    # ── each supplier's learned normal ──
+
+    def test_a_fee_billed_every_week_is_routine_but_the_same_week_twice_is_not(self):
+        # 9 invoices a week to all its customers: numbers 4536 and 4563, or 4545 and 4554, are weeks apart
+        rows = [INV_HEAD] + [
+            f'INV-{w},{4500 + 9 * w},PO-{w},SUP-R,خدمات نظافت,{from_mehr(7 * w)},12000000,W' for w in range(20)
+        ]
+        self.send('weekly.csv', rows)
+        self.assertEqual(self.alerts('P0_DUPLICATE_INVOICE'), [])
+
+        # the last week's invoice, 4671, entered again a day later as 4761
+        self.send('re-entry.csv', [INV_HEAD, f'INV-X,4761,PO-19,SUP-R,خدمات نظافت,{from_mehr(7 * 19 + 1)},12000000,W'])
+        (dup,) = self.alerts('P0_DUPLICATE_INVOICE')
+        self.assertEqual(dup['evidence']['invoice_numbers'], ['4671', '4761'])
+        self.assertEqual((dup['evidence']['routine_invoices'], dup['evidence']['routine_gap_days']), (21, 7))
+        self.assertIn('معمولاً با فاصلهٔ ۷ روز', dup['why_flagged_fa'][-1])
+
+    def test_an_invoice_far_above_the_suppliers_own_normal_is_flagged(self):
+        history = [INV_HEAD]
+        steady = [44, 46, 48, 50, 52, 54, 56]
+        wide = [5, 8, 12, 15, 20, 30, 40, 45, 60, 80, 90, 100, 120, 150, 180, 200, 220, 250, 280, 300]
+        for i in range(20):
+            day = from_mehr(i * 6)
+            history.append(f'A-{i},A{i},PO-A{i},SUP-A,شرکت ثابت,{day},{steady[i % 7] * 1_000_000},W')
+            history.append(f'B-{i},B{i},PO-B{i},SUP-B,شرکت پرنوسان,{day},{wide[i * 7 % 20] * 1_000_000},W')
+            if i < 5:
+                history.append(f'C-{i},C{i},PO-C{i},SUP-C,شرکت تازه,{day},10000000,W')
+        for m in range(24):  # 3% a month for two years
+            history.append(f'D-{m},D{m},PO-D{m},SUP-D,شرکت تورمی,{1403 + m // 12}/{pad(1 + m % 12)}/10,{round(100_000_000 * 1.03 ** m)},W')
+        self.send('history.csv', history)
+        self.assertEqual(self.alerts('P0_AMOUNT_OUTLIER'), [])
+
+        self.send('bahman.csv', [
+            INV_HEAD,
+            f'A-X,A99,PO-A99,SUP-A,شرکت ثابت,{from_mehr(125)},400000000,W',
+            f'B-X,B99,PO-B99,SUP-B,شرکت پرنوسان,{from_mehr(125)},350000000,W',
+            f'C-X,C99,PO-C99,SUP-C,شرکت تازه,{from_mehr(125)},500000000,W',
+        ])
+        (out,) = self.alerts('P0_AMOUNT_OUTLIER')
+        self.assertEqual(out['supplier_id'], 'SUP-A')
+        self.assertEqual(out['evidence']['previous_invoices'], 20)
+        self.assertEqual(out['evidence']['usual_median_rials'], 50_000_000)
+        self.assertEqual(out['evidence']['times_usual'], 8)
+        self.assertEqual(out['p2p_chain'][0]['source_file'], 'bahman.csv')
+        self.assertIn('۸ برابر', out['summary_fa'])
 
     # ── mapping ──
 

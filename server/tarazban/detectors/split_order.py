@@ -13,7 +13,7 @@ class SplitOrder:
     version = '1.2.0'
     kind = 'po_line'
 
-    def run(self, rows: list[dict]) -> list[Finding]:
+    def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
         # one entry per purchase order, summed over its lines
         orders = {}
         for r in rows:

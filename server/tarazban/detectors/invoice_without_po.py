@@ -9,7 +9,7 @@ class InvoiceWithoutPo:
     version = '1.2.0'
     kind = 'invoice'
 
-    def run(self, rows: list[dict]) -> list[Finding]:
+    def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
         findings = []
         for r in rows:
             # only rows from files that have a purchase-order column at all

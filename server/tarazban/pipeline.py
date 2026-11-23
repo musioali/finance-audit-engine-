@@ -4,14 +4,16 @@ From a received file to stored alerts:
 receive  -> the file is kept; its columns are mapped from a saved mapping, from standard names,
             or else the person is asked once
 ingest   -> rows go into the standard model; rows already received are skipped
-detect   -> every detector runs over all rows received so far, so a re-entry next month is
-            caught against this month's invoice
+detect   -> each supplier's normal behaviour is learned again from all rows received so far,
+            then every detector runs over those rows, so a re-entry next month is caught against
+            this month's invoice and each file sharpens what counts as normal
 decide   -> the auditor's decision is logged with the alert's features as they were
 """
 import hashlib
 import json
 from collections import Counter, defaultdict
 
+from . import baselines
 from . import mapping as mapper
 from .detectors import DETECTORS, TITLES
 from .explain import chain, describe, where
@@ -126,7 +128,8 @@ def load_records(conn, kind: str | None = None) -> list[dict]:
 def detect(conn, upload_id: int) -> int:
     """Runs every detector over all rows received so far and stores what is new. Returns how many alerts were added."""
     rows = {k: load_records(conn, k) for k in KINDS}
-    findings = [f for d in DETECTORS for f in d.run(rows[d.kind])]
+    profiles = baselines.learn(rows)
+    findings = [f for d in DETECTORS for f in d.run(rows[d.kind], profiles)]
     versions = {d.id: d.version for d in DETECTORS}
 
     known, by_record, by_key = {}, defaultdict(set), {}

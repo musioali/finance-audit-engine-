@@ -1,4 +1,12 @@
-"""The same supplier invoice entered twice: the same number written differently, a re-entry suffix, or two swapped digits."""
+"""
+The same supplier invoice entered twice: the same number written differently, a re-entry suffix, or two
+swapped digits.
+
+A suffix or a swap alone is weak evidence, and it is weaker still when the amount is one the supplier
+bills routinely: a monthly fee with numbers 1023 and 1032 is two months, not one invoice twice. Such a
+pair is left out when the two are as far apart as the supplier's usual gap for that amount, learned
+from its own history (baselines.py); the same fee twice within a couple of days is still flagged.
+"""
 import re
 from collections import defaultdict
 
@@ -31,10 +39,10 @@ def is_adjacent_swap(a: str, b: str) -> bool:
 class DuplicateInvoice:
     id = 'P0_DUPLICATE_INVOICE'
     title = 'فاکتور تکراری و مشابه'
-    version = '1.2.0'
+    version = '1.3.0'
     kind = 'invoice'
 
-    def run(self, rows: list[dict]) -> list[Finding]:
+    def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
         by_supplier = defaultdict(list)
         for r in rows:
             key = invoice_key(r.get('invoice_number', ''))
@@ -44,7 +52,8 @@ class DuplicateInvoice:
                 by_supplier[supplier_key(r)].append(inv)
 
         findings, seen = [], set()
-        for invoices in by_supplier.values():
+        for supplier, invoices in by_supplier.items():
+            routines = profiles[supplier].routines if supplier in profiles else {}
             by_key, by_sig = defaultdict(list), defaultdict(list)
             for inv in invoices:
                 by_key[inv['key']].append(inv)
@@ -70,11 +79,14 @@ class DuplicateInvoice:
                     days = abs(da - db) if da is not None and db is not None else None
                     if match != 'same' and (days is None or days > DUPLICATE_DAYS):
                         continue
+                    routine = routines.get(a['amount']) if same_amount else None
+                    if match != 'same' and routine and days >= routine.gap_days / 2:
+                        continue  # as far apart as this supplier usually bills this amount
                     seen.add(pair)
-                    findings.append(self._finding(a, b, match, same_amount, days))
+                    findings.append(self._finding(a, b, match, same_amount, days, routine))
         return findings
 
-    def _finding(self, a, b, match, same_amount, days) -> Finding:
+    def _finding(self, a, b, match, same_amount, days, routine) -> Finding:
         first, second = (a, b) if a['r']['_id'] < b['r']['_id'] else (b, a)
         r1, r2 = first['r'], second['r']
         return Finding(
@@ -93,6 +105,8 @@ class DuplicateInvoice:
                 'amounts_rials': [first['amount'], second['amount']],
                 'same_amount': same_amount,
                 'days_apart': days,
+                'routine_invoices': routine.count if routine else 0,
+                'routine_gap_days': routine.gap_days if routine else None,
             },
             features={
                 'amount': second['amount'],
@@ -101,6 +115,8 @@ class DuplicateInvoice:
                 'match_same': int(match == 'same'),
                 'match_suffix': int(match == 'suffix'),
                 'match_swap': int(match == 'swap'),
+                'routine_invoices': routine.count if routine else 0,
+                'days_vs_routine_gap': days / routine.gap_days if routine and days is not None and routine.gap_days else None,
             },
             steps=[
                 Step(r1['_id'], 'first', False, first['amount']),
