@@ -63,7 +63,7 @@ export default function CaseView({
               aria-label="هشدار قبلی"
               disabled={!onPrev}
               onClick={() => onPrev?.()}
-              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white ring-1 ring-ink/10 transition-all duration-500 ease-spring hover:ring-ink/25 active:scale-95 disabled:cursor-default disabled:opacity-40"
+              className="glass-tile flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-all duration-500 ease-spring hover:bg-white/80 active:scale-95 disabled:cursor-default disabled:opacity-40"
             >
               <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
             </button>
@@ -72,7 +72,7 @@ export default function CaseView({
               aria-label="هشدار بعدی"
               disabled={!onNext}
               onClick={() => onNext?.()}
-              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white ring-1 ring-ink/10 transition-all duration-500 ease-spring hover:ring-ink/25 active:scale-95 disabled:cursor-default disabled:opacity-40"
+              className="glass-tile flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition-all duration-500 ease-spring hover:bg-white/80 active:scale-95 disabled:cursor-default disabled:opacity-40"
             >
               <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
             </button>
@@ -105,7 +105,7 @@ export default function CaseView({
               ['تأمین‌کننده', alert.supplier_name || 'نامشخص', place],
               ['مسئول بررسی', alert.assigned_to || 'تعیین نشده', alert.primary_entity_id],
             ].map(([k, v, sub]) => (
-              <div key={k} className="rounded-2xl bg-paper px-5 py-4">
+              <div key={k} className="glass-tile rounded-2xl px-5 py-4">
                 <dt className="text-[13px] text-muted">{k}</dt>
                 <dd className="num mt-1 truncate text-[17px] font-bold">{v}</dd>
                 <dd className="num truncate text-[13px] text-muted">{sub}</dd>
@@ -143,7 +143,7 @@ export default function CaseView({
                       <span
                         className={cx(
                           'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-1',
-                          step.is_anomalous ? 'bg-flag-tint text-flag ring-flag/30' : 'bg-white text-ink ring-ink/15'
+                          step.is_anomalous ? 'bg-flag-tint/90 text-flag ring-flag/30' : 'bg-white/80 text-ink ring-white shadow-[0_4px_12px_-6px_rgba(15,33,56,0.35)]'
                         )}
                       >
                         <FileText className="h-4 w-4" strokeWidth={1.5} />
@@ -151,7 +151,7 @@ export default function CaseView({
                       <div
                         className={cx(
                           'min-w-0 flex-1 rounded-2xl px-5 py-4',
-                          step.is_anomalous ? 'bg-flag-tint/60 ring-1 ring-flag/15' : 'bg-paper'
+                          step.is_anomalous ? 'bg-flag/[0.08] shadow-[inset_0_0_0_1px_rgba(207,59,51,0.16),inset_0_1px_0_rgba(255,255,255,0.8)]' : 'glass-tile'
                         )}
                       >
                         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -219,7 +219,7 @@ export default function CaseView({
                         key={d}
                         className={cx(
                           'flex min-h-11 cursor-pointer items-center gap-2 rounded-2xl px-3 text-[14px] font-semibold ring-1 transition-all duration-500 ease-spring has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-level',
-                          status === d ? 'bg-ink text-white ring-ink' : 'bg-paper text-ink ring-ink/[0.06] hover:ring-ink/20'
+                          status === d ? 'liquid-ink ring-transparent' : 'glass-tile text-ink ring-transparent hover:bg-white/75'
                         )}
                       >
                         <input type="radio" name="decision" value={d} checked={status === d} onChange={() => setStatus(d)} className="sr-only" />
@@ -269,7 +269,7 @@ export default function CaseView({
               ) : (
                 <ol className="mt-3 space-y-3 px-4 md:px-6">
                   {logs.map((l) => (
-                    <li key={l.log_id} className="rounded-2xl bg-paper px-4 py-3">
+                    <li key={l.log_id} className="glass-tile rounded-2xl px-4 py-3">
                       <div className="flex flex-wrap items-baseline justify-between gap-2 text-[13px] text-muted">
                         <span className="font-semibold text-ink">
                           {l.actor_id}، {l.actor_role_fa}

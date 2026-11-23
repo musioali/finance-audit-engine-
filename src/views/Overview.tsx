@@ -57,7 +57,7 @@ export default function Overview({
                   type="button"
                   disabled={r.count === 0}
                   onClick={() => onRule(r.rule_id)}
-                  className="group block w-full cursor-pointer rounded-2xl px-3 py-3 text-right transition-colors duration-500 ease-spring hover:bg-paper disabled:cursor-default disabled:hover:bg-transparent"
+                  className="group block w-full cursor-pointer rounded-2xl px-3 py-3 text-right transition-colors duration-500 ease-spring hover:bg-white/55 disabled:cursor-default disabled:hover:bg-transparent"
                 >
                   <div className="flex items-baseline justify-between gap-4">
                     <span className={cx('text-[15px] font-semibold', r.count ? 'text-ink' : 'text-muted')}>
@@ -67,9 +67,9 @@ export default function Overview({
                       {r.count ? `${formatRials(r.count)} هشدار، ${formatMillionRials(r.exposure_rials)}` : 'بدون هشدار'}
                     </span>
                   </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink/[0.05]">
+                  <div className="glass-well mt-2 h-2.5 overflow-hidden rounded-full">
                     <div
-                      className="h-full rounded-full bg-ink transition-[width] duration-700 ease-spring group-hover:bg-level"
+                      className="h-full rounded-full bg-[linear-gradient(180deg,#2c4c78,#0f2138)] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] transition-all duration-700 ease-spring group-hover:bg-[linear-gradient(180deg,#22a47f,#138a6b)]"
                       style={{ width: `${r.count ? Math.max(3, (r.exposure_rials / maxRule) * 100) : 0}%` }}
                     />
                   </div>
@@ -105,11 +105,11 @@ export default function Overview({
               {formatMillionRials(summary.confirmed_exposure_rials)}
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-paper px-4 py-3">
+              <div className="glass-tile rounded-2xl px-4 py-3">
                 <div className="text-[13px] text-muted">ناهنجاری تأییدشده</div>
                 <div className="num text-[20px] font-bold">{formatRials(summary.by_status.CONFIRMED)}</div>
               </div>
-              <div className="rounded-2xl bg-paper px-4 py-3">
+              <div className="glass-tile rounded-2xl px-4 py-3">
                 <div className="text-[13px] text-muted">هشدار نادرست</div>
                 <div className="num text-[20px] font-bold">{formatRials(summary.by_status.FALSE_POSITIVE)}</div>
               </div>
@@ -143,7 +143,7 @@ export default function Overview({
                   key={st}
                   type="button"
                   onClick={() => onStatus(st)}
-                  className="min-h-11 cursor-pointer rounded-2xl bg-paper px-4 py-3 text-right transition-colors duration-500 ease-spring hover:bg-tint"
+                  className="glass-tile min-h-11 cursor-pointer rounded-2xl px-4 py-3 text-right transition-all duration-500 ease-spring hover:bg-white/75"
                 >
                   <div className="text-[13px] text-muted">{STATUS_LABELS[st]}</div>
                   <div className="num text-[20px] font-bold">{formatRials(summary.by_status[st] || 0)}</div>

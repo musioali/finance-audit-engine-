@@ -62,10 +62,10 @@ export default function DataView({
             }}
             className={cx(
               'flex flex-col items-center rounded-[18px] border-2 border-dashed px-6 py-12 text-center transition-colors duration-500 ease-spring',
-              over ? 'border-level bg-tint/60' : 'border-ink/15 bg-paper'
+              over ? 'border-level bg-level/[0.08]' : 'border-white bg-white/30'
             )}
           >
-            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white ring-1 ring-ink/10">
+            <span className="glass-tile flex h-14 w-14 items-center justify-center rounded-full">
               <Upload className="h-6 w-6 text-ink" strokeWidth={1.5} />
             </span>
             <div className="mt-5 text-[19px] font-bold">فایل CSV فاکتورها یا سفارش‌های خرید را اینجا رها کنید</div>
@@ -105,7 +105,7 @@ export default function DataView({
           <Reveal key={t.file} delay={i * 0.08}>
             <Panel className="h-full" inner="flex h-full flex-col p-6 md:p-7">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-tint text-level">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-level/[0.12] text-level shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
                   <FileSpreadsheet className="h-5 w-5" strokeWidth={1.5} />
                 </span>
                 <div>
@@ -143,7 +143,7 @@ export default function DataView({
           ) : (
             <div className="mt-4 space-y-3 px-4 md:px-6">
               {quality.map((q) => (
-                <div key={q.table_name} className="rounded-2xl bg-paper px-5 py-4">
+                <div key={q.table_name} className="glass-tile rounded-2xl px-5 py-4">
                   <div className="flex flex-wrap items-baseline justify-between gap-3">
                     <div>
                       <div className="text-[16px] font-bold">{q.table_label_fa}</div>
@@ -153,8 +153,8 @@ export default function DataView({
                       {q.required_coverage_pct.toLocaleString('fa-IR')}٪ ستون‌های لازم پر است
                     </div>
                   </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-ink/[0.06]">
-                    <div className="h-full rounded-full bg-level" style={{ width: `${q.required_coverage_pct}%` }} />
+                  <div className="glass-well mt-3 h-2.5 overflow-hidden rounded-full">
+                    <div className="h-full rounded-full bg-[linear-gradient(180deg,#22a47f,#138a6b)] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]" style={{ width: `${q.required_coverage_pct}%` }} />
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {Object.entries(q.columns).map(([col, m]) => (
@@ -162,7 +162,7 @@ export default function DataView({
                         key={col}
                         className={cx(
                           'num rounded-full px-3 py-0.5 text-[13px]',
-                          m.null_or_empty_count > 0 || (m.invalid_count ?? 0) > 0 ? 'bg-amber-tint text-amber' : 'bg-white text-muted ring-1 ring-ink/[0.06]'
+                          m.null_or_empty_count > 0 || (m.invalid_count ?? 0) > 0 ? 'bg-amber/[0.1] text-amber' : 'bg-white/60 text-muted shadow-[inset_0_0_0_1px_rgba(255,255,255,0.9)]'
                         )}
                       >
                         <span dir="ltr">{col}</span>
@@ -190,13 +190,13 @@ export default function DataView({
           ) : (
             <div className="mt-4 space-y-3 px-4 md:px-6">
               {candidates.map((c) => (
-                <div key={c.candidate_id} className="rounded-2xl bg-paper p-4 md:p-5">
+                <div key={c.candidate_id} className="glass-tile rounded-2xl p-4 md:p-5">
                   <div className="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr_auto_1fr]">
                     {[
                       [c.left_label, c.left_id, c.left_raw, c.left_iban_masked],
                       [c.right_label, c.right_id, c.right_raw, c.right_iban_masked],
                     ].map(([label, id, raw, iban], idx) => (
-                      <div key={idx} className={cx('rounded-2xl bg-white px-4 py-3 ring-1 ring-ink/[0.06]', idx === 1 && 'md:order-3')}>
+                      <div key={idx} className={cx('rounded-2xl bg-white/70 px-4 py-3 shadow-[inset_0_1px_0_#fff,0_6px_14px_-10px_rgba(15,33,56,0.3)]', idx === 1 && 'md:order-3')}>
                         <div className="text-[16px] font-bold">{label}</div>
                         <div className="text-[13px] text-muted">«{raw}»</div>
                         <div className="num mt-1 text-[13px] text-muted" dir="ltr">

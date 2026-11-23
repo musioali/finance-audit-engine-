@@ -56,7 +56,7 @@ export default function Alerts({
                 className={cx(inputClass, 'rounded-full pr-11')}
               />
             </div>
-            <div className="flex flex-wrap items-center gap-1 rounded-full bg-paper p-1 ring-1 ring-ink/[0.06]" role="group" aria-label="اولویت">
+            <div className="glass-well flex flex-wrap items-center gap-1 rounded-full p-1" role="group" aria-label="اولویت">
               {(['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'] as const).map((p) => (
                 <button
                   key={p}
@@ -65,7 +65,7 @@ export default function Alerts({
                   onClick={() => setFilters({ ...filters, priority: p })}
                   className={cx(
                     'min-h-11 cursor-pointer rounded-full px-4 text-[14px] font-semibold transition-all duration-500 ease-spring',
-                    filters.priority === p ? 'bg-white text-ink shadow-[0_6px_16px_-10px_rgba(15,33,56,0.5)]' : 'text-muted hover:text-ink'
+                    filters.priority === p ? 'bg-white/90 text-ink shadow-[inset_0_1px_0_#fff,0_6px_16px_-8px_rgba(15,33,56,0.45)]' : 'text-muted hover:text-ink'
                   )}
                 >
                   {p === 'ALL' ? 'همه' : PRIORITY_LABELS[p]}

@@ -64,7 +64,7 @@ export default function Welcome({
       </Reveal>
       <Reveal delay={0.4} className="mt-12 grid w-full grid-cols-1 gap-3 text-right sm:grid-cols-3">
         {FACTS.map(([t, b]) => (
-          <div key={t} className="rounded-[22px] bg-white/70 px-5 py-4 ring-1 ring-ink/[0.06]">
+          <div key={t} className="glass-tile rounded-[22px] px-5 py-4">
             <div className="text-[15px] font-bold">{t}</div>
             <div className="mt-1 text-[14px] leading-7 text-muted">{b}</div>
           </div>

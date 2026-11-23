@@ -259,11 +259,12 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-paper text-ink">
+    <div className="min-h-[100dvh] text-ink">
+      <div className="tz-backdrop" aria-hidden="true" />
       <header className="sticky top-4 z-30 px-3">
         <nav
           aria-label="بخش‌ها"
-          className="mx-auto flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/80 p-1.5 shadow-[0_18px_44px_-26px_rgba(15,33,56,0.45)] ring-1 ring-ink/[0.07] backdrop-blur-xl"
+          className="mx-auto flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/45 p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-10px_20px_-14px_rgba(15,33,56,0.18),0_0_0_1px_rgba(255,255,255,0.7),0_22px_48px_-26px_rgba(15,33,56,0.5)] backdrop-blur-2xl backdrop-saturate-[1.8]"
         >
           <a href="#/overview" aria-label="ترازبان" className="flex min-h-11 shrink-0 items-center gap-2.5 rounded-full ps-3 pe-3 sm:pe-4">
             <BrandMark size={22} />
@@ -279,13 +280,13 @@ export default function App() {
                 onClick={() => go({ page } as Route)}
                 className={cx(
                   'relative min-h-11 shrink-0 cursor-pointer rounded-full px-4 text-[15px] font-semibold transition-colors duration-500 ease-spring',
-                  active === page ? 'text-white' : 'text-muted hover:text-ink'
+                  active === page ? 'text-ink' : 'text-muted hover:text-ink'
                 )}
               >
                 {active === page && (
                   <motion.span
                     layoutId="nav-pill"
-                    className="absolute inset-0 rounded-full bg-ink"
+                    className="absolute inset-0 rounded-full bg-white/90 shadow-[inset_0_1px_0_#fff,inset_0_-2px_6px_rgba(15,33,56,0.08),0_6px_18px_-8px_rgba(15,33,56,0.45)]"
                     transition={{ type: 'spring', bounce: 0.18, duration: 0.6 }}
                   />
                 )}
@@ -304,7 +305,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => go({ page: 'data' })}
-                className="min-h-11 max-w-48 shrink-0 cursor-pointer truncate rounded-full bg-tint px-4 text-[13px] font-semibold text-level transition-colors duration-500 ease-spring hover:bg-tint/70"
+                className="min-h-11 max-w-48 shrink-0 cursor-pointer truncate rounded-full bg-level/[0.12] px-4 text-[13px] font-semibold text-level shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-colors duration-500 ease-spring hover:bg-level/[0.18]"
                 title="منبع داده"
               >
                 {sourceLabel}
@@ -324,7 +325,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
             transition={{ duration: 0.6, ease: EASE }}
-            className="fixed inset-x-0 bottom-6 z-40 mx-auto w-fit max-w-[calc(100%-2rem)] rounded-full bg-ink px-6 py-3 text-[15px] font-medium text-white shadow-[0_18px_40px_-18px_rgba(15,33,56,0.6)]"
+            className="fixed inset-x-0 bottom-6 z-40 mx-auto w-fit max-w-[calc(100%-2rem)] rounded-full bg-ink/75 px-6 py-3 text-[15px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_0_0_1px_rgba(255,255,255,0.12),0_18px_40px_-18px_rgba(15,33,56,0.6)] backdrop-blur-xl backdrop-saturate-150"
           >
             {toast}
           </motion.div>
