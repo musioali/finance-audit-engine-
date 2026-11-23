@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { AlertAuditLog, AlertStatus, RiskAlert } from './types';
-import { analyzeUploadedCsvContent } from './engine/upload';
+import { confirmMapping, fetchState, Ingested, NeedsMapping, saveDecision, ServerState, uploadFile } from './api';
 import {
   computeDashboardSummary,
   createEmptyEngineState,
@@ -17,6 +17,7 @@ import Alerts, { Filters, NO_FILTERS } from './views/Alerts';
 import CaseView from './views/CaseView';
 import DataView from './views/DataView';
 import Welcome from './views/Welcome';
+import MappingView from './views/MappingView';
 
 type Route = { page: 'overview' } | { page: 'alerts' } | { page: 'case'; id: string } | { page: 'data' };
 type Source = { sample: boolean; files: string[] };
@@ -40,6 +41,17 @@ function hashOf(r: Route) {
 function nowJalali() {
   const d = new Date();
   return `${d.toLocaleDateString('fa-IR')}، ${d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function fromServer(s: ServerState): EngineState {
+  return {
+    ...createEmptyEngineState(),
+    sourceSystem: 'tarazban-server',
+    totalRecords: s.total_records,
+    alerts: s.alerts,
+    auditLogs: s.audit_logs,
+    qualityReports: s.quality_reports,
+  };
 }
 
 function download(name: string, text: string) {
@@ -68,6 +80,19 @@ export default function App() {
   const [route, setRoute] = useState<Route>(readRoute);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [toast, setToast] = useState<string | null>(null);
+  const [pending, setPending] = useState<NeedsMapping[]>([]);
+
+  // Everything received earlier is kept on the server: open with it.
+  useEffect(() => {
+    if (SAMPLE_LINK) return;
+    fetchState()
+      .then((s) => {
+        if (!s.files.length) return;
+        setEngine(fromServer(s));
+        setSource((cur) => (cur.sample ? cur : { sample: false, files: s.files }));
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const onHash = () => {
@@ -118,48 +143,83 @@ export default function App() {
     go({ page: 'overview' });
   };
 
-  const analyse = (items: Array<{ name: string; text: string }>) => {
-    let next = source.sample ? createEmptyEngineState() : engine;
-    let added = 0;
-    let rows = 0;
-    const done: string[] = [];
+  const refresh = async () => {
+    const s = await fetchState();
+    setEngine(fromServer(s));
+    setSource({ sample: false, files: s.files });
+    setFilters(NO_FILTERS);
+  };
+
+  const report = (done: Ingested[]) => {
+    const rows = done.reduce((n, d) => n + d.rows, 0);
+    const fresh = done.reduce((n, d) => n + d.new_rows, 0);
+    const added = done.reduce((n, d) => n + d.alerts_added, 0);
+    setToast(
+      fresh === 0
+        ? 'این داده قبلاً دریافت شده بود؛ سطر تازه‌ای نداشت.'
+        : `${formatRials(rows)} سطر بررسی شد${fresh < rows ? ` (${formatRials(rows - fresh)} سطر از قبل رسیده بود)` : ''} و ${formatRials(added)} هشدار تازه پیدا شد.`
+    );
+  };
+
+  // Files go to the engine one by one; those with unfamiliar columns wait for the person to map them.
+  const send = async (items: Array<{ blob: Blob; name: string }>) => {
+    const done: Ingested[] = [];
+    const ask: NeedsMapping[] = [];
     for (const it of items) {
       try {
-        const r = analyzeUploadedCsvContent(it.name, it.text, next);
-        next = r.updatedState;
-        added += r.addedAlertsCount;
-        rows += r.rowsParsed;
-        done.push(it.name);
+        const r = await uploadFile(it.blob, it.name);
+        if (r.status === 'done') done.push(r);
+        else ask.push(r);
       } catch (err) {
         setToast(`${it.name}: ${err instanceof Error ? err.message : 'فایل خوانده نشد.'}`);
       }
     }
-    if (!done.length) return;
-    setEngine(next);
-    setSource((s) => ({ sample: false, files: [...(s.sample ? [] : s.files), ...done] }));
-    setFilters(NO_FILTERS);
-    setToast(`${formatRials(rows)} سطر بررسی شد و ${formatRials(added)} هشدار پیدا شد.`);
-    go({ page: 'alerts' });
+    if (done.length) {
+      await refresh().catch(() => undefined);
+      report(done);
+    }
+    if (ask.length) setPending((p) => [...p, ...ask]);
+    else if (done.length) go({ page: 'alerts' });
   };
 
-  const onFiles = async (list: FileList) => {
-    const items = await Promise.all(Array.from(list).map(async (f) => ({ name: f.name, text: await f.text() })));
-    analyse(items);
+  const onFiles = (list: FileList) => send(Array.from(list).map((f) => ({ blob: f, name: f.name })));
+
+  const onMapped = async (item: NeedsMapping, kind: string, mapping: Record<string, string>) => {
+    try {
+      const r = await confirmMapping(item.upload_id, kind, mapping);
+      await refresh();
+      report([r]);
+      const rest = pending.filter((p) => p.upload_id !== item.upload_id);
+      setPending(rest);
+      if (!rest.length) go({ page: 'alerts' });
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : 'فایل خوانده نشد.');
+    }
   };
 
-  const decide = (alert: RiskAlert, d: { status: AlertStatus; assignee: string; note: string }) => {
-    const [role, name] = d.assignee.split(' - ');
-    const log: AlertAuditLog = {
-      log_id: `LOG-${Date.now()}`,
-      alert_id: alert.alert_id,
-      actor_id: name?.trim() || d.assignee,
-      actor_role_fa: role?.trim() || 'حسابرس',
-      previous_status: alert.status,
-      new_status: d.status,
-      assigned_to: d.assignee,
-      auditor_note: d.note.trim(),
-      created_at: nowJalali(),
-    };
+  const decide = async (alert: RiskAlert, d: { status: AlertStatus; assignee: string; note: string }) => {
+    let log: AlertAuditLog;
+    if (source.sample) {
+      const [role, name] = d.assignee.split(' - ');
+      log = {
+        log_id: `LOG-${Date.now()}`,
+        alert_id: alert.alert_id,
+        actor_id: name?.trim() || d.assignee,
+        actor_role_fa: role?.trim() || 'حسابرس',
+        previous_status: alert.status,
+        new_status: d.status,
+        assigned_to: d.assignee,
+        auditor_note: d.note.trim(),
+        created_at: nowJalali(),
+      };
+    } else {
+      try {
+        log = await saveDecision(alert.alert_id, d);
+      } catch (err) {
+        setToast(err instanceof Error ? err.message : 'تصمیم ثبت نشد.');
+        return;
+      }
+    }
     setEngine((prev) => ({
       ...prev,
       alerts: prev.alerts.map((a) => (a.alert_id === alert.alert_id ? { ...a, status: d.status, assigned_to: d.assignee } : a)),
@@ -185,7 +245,16 @@ export default function App() {
   const active = route.page === 'case' ? 'alerts' : route.page;
 
   let view: ReactNode;
-  if (route.page === 'data') {
+  if (pending.length > 0) {
+    view = (
+      <MappingView
+        item={pending[0]}
+        waiting={pending.length - 1}
+        onConfirm={(kind, mapping) => onMapped(pending[0], kind, mapping)}
+        onCancel={() => setPending((p) => p.slice(1))}
+      />
+    );
+  } else if (route.page === 'data') {
     view = (
       <DataView
         files={source.files}
@@ -193,7 +262,7 @@ export default function App() {
         quality={engine.qualityReports}
         candidates={engine.entityCandidates}
         onFiles={onFiles}
-        onTemplate={(name) => analyse([{ name, text: CSV_TEMPLATES[name] }])}
+        onTemplate={(name) => send([{ blob: new Blob([CSV_TEMPLATES[name]], { type: 'text/csv' }), name }])}
         onDownload={(name) => download(name, CSV_TEMPLATES[name])}
         onResolve={(id, decision) => {
           setEngine((prev) => ({

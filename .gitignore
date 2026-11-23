@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+server/.venv/
+server/data/
+__pycache__/

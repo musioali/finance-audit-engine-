@@ -8,8 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit",
-    "check:engine": "tsx scripts/engine-check.ts"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@fontsource-variable/vazirmatn": "^5.3.0",
