@@ -40,7 +40,12 @@ export type Ingested = {
 
 const UNREACHABLE = 'موتور ترازبان در دسترس نیست. سرویس آن باید روی سرور اجرا شده باشد.';
 
+/** The public demo on GitHub Pages is built without the engine (VITE_DEMO=1): it shows the sample data only. */
+export const DEMO = import.meta.env.VITE_DEMO === '1';
+const DEMO_ONLY = 'این نسخهٔ نمایشی فقط دادهٔ نمونه دارد. فایل واقعی با موتور ترازبان روی سرور خود شرکت بررسی می‌شود.';
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  if (DEMO) throw new Error(DEMO_ONLY);
   let res: Response;
   try {
     res = await fetch(`/api${path}`, init);

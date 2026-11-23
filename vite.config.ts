@@ -6,6 +6,8 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // The public demo is served from https://<owner>.github.io/<repo>/ (see .github/workflows/pages.yml).
+    base: process.env.BASE_PATH || '/',
     plugins: [
       react(),
       tailwindcss(),

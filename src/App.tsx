@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import { AlertAuditLog, AlertStatus, RiskAlert } from './types';
-import { confirmMapping, fetchState, Ingested, NeedsMapping, saveDecision, ServerState, uploadFile } from './api';
+import { confirmMapping, DEMO, fetchState, Ingested, NeedsMapping, saveDecision, ServerState, uploadFile } from './api';
 import {
   computeDashboardSummary,
   createEmptyEngineState,
@@ -25,6 +25,9 @@ type Source = { sample: boolean; files: string[] };
 // A link like #/sample or #/sample/case/<id> opens the app with the sample data loaded.
 const SAMPLE_LINK = /^#\/?sample(\/|$)/.test(window.location.hash);
 if (SAMPLE_LINK) window.history.replaceState(null, '', window.location.hash.replace(/^#\/?sample\/?/, '#/'));
+// The public demo has no engine behind it, so it always opens on the sample data.
+const START_SAMPLE = DEMO || SAMPLE_LINK;
+const REPO_URL = 'https://github.com/musioali/finance-audit-engine-';
 
 function readRoute(): Route {
   const [page, id] = window.location.hash.replace(/^#\/?/, '').split('/');
@@ -74,9 +77,9 @@ const NAV: Array<[Route['page'], string]> = [
 
 export default function App() {
   const [engine, setEngine] = useState<EngineState>(() =>
-    SAMPLE_LINK ? generateSyntheticEngineState(15000) : createEmptyEngineState()
+    START_SAMPLE ? generateSyntheticEngineState(15000) : createEmptyEngineState()
   );
-  const [source, setSource] = useState<Source>({ sample: SAMPLE_LINK, files: [] });
+  const [source, setSource] = useState<Source>({ sample: START_SAMPLE, files: [] });
   const [route, setRoute] = useState<Route>(readRoute);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [toast, setToast] = useState<string | null>(null);
@@ -84,7 +87,7 @@ export default function App() {
 
   // Everything received earlier is kept on the server: open with it.
   useEffect(() => {
-    if (SAMPLE_LINK) return;
+    if (START_SAMPLE) return;
     fetchState()
       .then((s) => {
         if (!s.files.length) return;
@@ -384,7 +387,17 @@ export default function App() {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-[1240px] px-4 pb-24 pt-14 md:px-8 md:pt-16">{view}</main>
+      <main className="mx-auto w-full max-w-[1240px] px-4 pb-24 pt-14 md:px-8 md:pt-16">
+        {DEMO && (
+          <p className="mx-auto -mt-4 mb-10 w-fit max-w-full rounded-[22px] bg-white/55 px-5 py-2.5 text-center text-[14px] leading-7 text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_0_0_1px_rgba(255,255,255,0.6)]">
+            نسخهٔ نمایشی با دادهٔ ساختگی. فایل واقعی با موتور ترازبان روی سرور خود شرکت بررسی می‌شود.{' '}
+            <a href={REPO_URL} className="font-semibold text-level underline-offset-4 hover:underline">
+              کد و راهنما
+            </a>
+          </p>
+        )}
+        {view}
+      </main>
 
       <AnimatePresence>
         {toast && (
