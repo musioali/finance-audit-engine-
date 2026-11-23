@@ -30,6 +30,26 @@ if (SAMPLE_LINK) window.history.replaceState(null, '', window.location.hash.repl
 const START_SAMPLE = DEMO || SAMPLE_LINK;
 const REPO_URL = 'https://github.com/musioali/finance-audit-engine-';
 
+// The demo build runs the engine on made-up invoices first (server/tarazban/demo.py writes src/demo-alerts.json),
+// and its alerts are built into the page, so they are there from the first frame. Other builds have no such file.
+const ENGINE_RUN = Object.values(
+  import.meta.glob<Pick<ServerState, 'alerts' | 'audit_logs'>>('./demo-alerts.json', { eager: true, import: 'default' })
+)[0];
+
+/** The hand-written sample; in the demo, with the engine's own alerts among them. */
+function sampleState(): EngineState {
+  const sample = generateSyntheticEngineState(15000);
+  if (!DEMO || !ENGINE_RUN) return sample;
+  const weight = (a: RiskAlert) => a.risk_score * a.confidence_score;
+  return {
+    ...sample,
+    alerts: [...sample.alerts, ...ENGINE_RUN.alerts.map((a) => ({ ...a, created_at: jalaliTime(a.created_at) }))].sort(
+      (a, b) => weight(b) - weight(a)
+    ),
+    auditLogs: [...ENGINE_RUN.audit_logs.map((l) => ({ ...l, created_at: jalaliTime(l.created_at) })), ...sample.auditLogs],
+  };
+}
+
 function readRoute(): Route {
   const [page, id] = window.location.hash.replace(/^#\/?/, '').split('/');
   if (page === 'alerts') return { page: 'alerts' };
@@ -80,7 +100,7 @@ const NAV: Array<[Route['page'], string]> = [
 
 export default function App() {
   const [engine, setEngine] = useState<EngineState>(() =>
-    START_SAMPLE ? generateSyntheticEngineState(15000) : createEmptyEngineState()
+    START_SAMPLE ? sampleState() : createEmptyEngineState()
   );
   const [source, setSource] = useState<Source>({ sample: START_SAMPLE, files: [] });
   const [route, setRoute] = useState<Route>(readRoute);
@@ -96,26 +116,6 @@ export default function App() {
         if (!s.files.length) return;
         setEngine(fromServer(s));
         setSource((cur) => (cur.sample ? cur : { sample: false, files: s.files }));
-      })
-      .catch(() => undefined);
-  }, []);
-
-  // The public demo has no engine behind it; the build runs the engine on made-up invoices (server/tarazban/demo.py)
-  // and ships its alerts, which join the hand-written sample.
-  useEffect(() => {
-    if (!DEMO) return;
-    fetch(`${import.meta.env.BASE_URL}demo-alerts.json`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((s: Pick<ServerState, 'alerts' | 'audit_logs'> | null) => {
-        if (!s) return;
-        const alerts = s.alerts.map((a) => ({ ...a, created_at: jalaliTime(a.created_at) }));
-        const logs = s.audit_logs.map((l) => ({ ...l, created_at: jalaliTime(l.created_at) }));
-        const weight = (a: RiskAlert) => a.risk_score * a.confidence_score;
-        setEngine((prev) => ({
-          ...prev,
-          alerts: [...prev.alerts, ...alerts].sort((a, b) => weight(b) - weight(a)),
-          auditLogs: [...logs, ...prev.auditLogs],
-        }));
       })
       .catch(() => undefined);
   }, []);
@@ -163,7 +163,7 @@ export default function App() {
     : `${formatRials(source.files.length)} فایل`;
 
   const loadSample = () => {
-    setEngine(generateSyntheticEngineState(15000));
+    setEngine(sampleState());
     setSource({ sample: true, files: [] });
     setFilters(NO_FILTERS);
     go({ page: 'overview' });

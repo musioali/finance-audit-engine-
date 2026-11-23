@@ -32,7 +32,7 @@ jobs:
           cache: pip
           cache-dependency-path: server/requirements.txt
       - run: pip install -r server/requirements.txt
-      - run: python -m tarazban.demo ../public/demo-alerts.json
+      - run: python -m tarazban.demo ../src/demo-alerts.json
         working-directory: server
       - run: npm ci
       - run: npm run build

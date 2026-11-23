@@ -8,5 +8,5 @@ coverage/
 !.env.example
 server/.venv/
 server/data/
-public/demo-alerts.json
+src/demo-alerts.json
 __pycache__/

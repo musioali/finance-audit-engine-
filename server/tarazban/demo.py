@@ -1,12 +1,12 @@
 """
 Real engine output for the public demo, which has no server behind it.
 
-The demo build (.github/workflows/pages.yml) runs this on made-up invoices and ships the result as
-demo-alerts.json. So the alerts the demo marks «ساختهٔ موتور» are what this engine finds, word for word,
+The demo build (.github/workflows/pages.yml) runs this on made-up invoices and builds the result,
+src/demo-alerts.json, into the page. So the alerts the demo marks «ساختهٔ موتور» are what this engine finds, word for word,
 and change whenever the engine does. Two of the made-up decisions come from an imagined auditor, to
 show what the engine learns from decisions.
 
-Run from server/:  python -m tarazban.demo ../public/demo-alerts.json
+Run from server/:  python -m tarazban.demo ../src/demo-alerts.json
 """
 import json
 import math
