@@ -8,15 +8,17 @@ detect   -> each supplier's normal behaviour is learned again from all rows rece
             then every detector runs over those rows, so a re-entry next month is caught against
             this month's invoice and each file sharpens what counts as normal
 decide   -> the auditor's decision is logged with the alert's features as they were
+learn    -> on every read, the decisions so far set each alert's confidence and its place in the
+            list (learning.py): what the auditors confirm rises, what they reject sinks
 """
 import hashlib
 import json
 from collections import Counter, defaultdict
 
-from . import baselines
+from . import baselines, learning
 from . import mapping as mapper
 from .detectors import DETECTORS, TITLES
-from .explain import chain, describe, where
+from .explain import basis_words, chain, describe, where
 from .schema import KINDS
 from .store import now
 from .text import day_number, decode, norm_text, parse_amount, read_csv
@@ -229,11 +231,13 @@ def alert_id_of(n: int) -> str:
     return f'TZ-{n:05d}'
 
 
-def alert_json(row, records: dict[int, dict]) -> dict:
+def alert_json(row, records: dict[int, dict], learned: learning.Learned) -> dict:
     facts = json.loads(row['facts'])
     steps = json.loads(row['steps'])
     places = [where(records[s['record']]) for s in steps]
     summary, why = describe(row['detector'], facts, places)
+    confidence, basis = learned.confidence(row['detector'], learning.supplier_of(row), row['confidence'], json.loads(row['features']))
+    basis_short, basis_lines = basis_words(TITLES.get(row['detector'], row['detector']), basis, confidence)
     return {
         'alert_id': alert_id_of(row['id']),
         'batch_id': f'U-{row["upload_id"]}',
@@ -246,13 +250,14 @@ def alert_json(row, records: dict[int, dict]) -> dict:
         'warehouse_code': row['warehouse_code'],
         'department': None,
         'risk_score': row['risk'],
-        'confidence_score': row['confidence'],
+        'confidence_score': confidence,
+        'confidence_basis_fa': basis_short,
         'financial_exposure': row['exposure'],
         'priority': _priority(row['risk']),
         'status': row['status'],
         'assigned_to': row['assigned_to'],
         'summary_fa': summary,
-        'why_flagged_fa': why,
+        'why_flagged_fa': why + basis_lines,
         'evidence': {**facts, 'source_rows': [where(records[i]) for i in json.loads(row['record_ids'])]},
         'p2p_chain': chain(row['detector'], steps, records, facts),
         'created_at': row['created_at'],
@@ -275,7 +280,10 @@ def _log_json(row) -> dict:
 
 def state(conn) -> dict:
     records = {r['_id']: r for r in load_records(conn)}
-    alerts = [alert_json(a, records) for a in conn.execute('SELECT * FROM alerts ORDER BY risk DESC, exposure DESC, id')]
+    learned = learning.learn(conn)
+    alerts = [alert_json(a, records, learned) for a in conn.execute('SELECT * FROM alerts ORDER BY id')]
+    # most important first: how strong the signal is, times how likely the auditors are to confirm it
+    alerts.sort(key=lambda a: (-a['risk_score'] * a['confidence_score'], -a['financial_exposure']))
     return {
         'files': [r['file_name'] for r in conn.execute("SELECT file_name FROM uploads WHERE status = 'done' GROUP BY file_name ORDER BY MIN(id)")],
         'total_records': len(records),

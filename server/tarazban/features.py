@@ -30,7 +30,7 @@ FEATURES = {
 }
 
 
-@dataclass
+@dataclass(slots=True)
 class Invoice:
     record: int
     supplier: str  # profile key

@@ -8,7 +8,7 @@ import random
 import time
 import unittest
 
-from tarazban import pipeline
+from tarazban import learning, pipeline
 from tarazban.store import connect
 from tarazban.text import day_number, norm_text, parse_amount, read_csv, weekday
 
@@ -224,6 +224,47 @@ class Engine(unittest.TestCase):
         self.assertIn('تأمین‌کنندهٔ تازه', found[0]['summary_fa'])
         self.assertEqual(found[0]['confidence_score'], 50)
         self.assertEqual(found[0]['p2p_chain'][0]['source_file'], 'bahman.csv')
+
+    # ── learning from decisions ──
+
+    def test_alerts_the_auditor_rejected_for_a_supplier_sink_for_that_supplier(self):
+        rows = [INV_HEAD]
+        for i in range(20):
+            for s in ('S', 'T'):
+                rows.append(f'{s}-{i},{s}{i},PO-{s}{i},SUP-{s},شرکت {s},{from_mehr(i * 5)},{[46, 50, 54][i % 3] * 1_000_000},W')
+        for k, amount in enumerate((400, 410, 420)):  # three large invoices from S, one from T
+            rows.append(f'S-X{k},SX{k},PO-SX{k},SUP-S,شرکت S,{from_mehr(101 + k * 3)},{amount * 1_000_000},W')
+        rows.append(f'T-X,TX,PO-TX,SUP-T,شرکت T,{from_mehr(101)},400000000,W')
+        self.send('year.csv', rows)
+        outliers = self.alerts('P0_AMOUNT_OUTLIER')
+        self.assertEqual(len(outliers), 4)
+        self.assertTrue(all(a['confidence_basis_fa'].startswith('از قدرت نشانه') for a in outliers))
+
+        s_alerts = sorted((a for a in outliers if a['supplier_id'] == 'SUP-S'), key=lambda a: a['evidence']['invoice_number'])
+        for a in s_alerts[:2]:
+            pipeline.decide(self.conn, a['alert_id'], 'FALSE_POSITIVE', 'حسابرس ارشد - م. رضایی', 'قرارداد سالانه است')
+        after = {a['alert_id']: a for a in self.alerts('P0_AMOUNT_OUTLIER')}
+        third, other = after[s_alerts[2]['alert_id']], next(a for a in after.values() if a['supplier_id'] == 'SUP-T')
+        self.assertLess(third['confidence_score'], other['confidence_score'])
+        order = [a['alert_id'] for a in self.alerts()]
+        self.assertLess(order.index(other['alert_id']), order.index(third['alert_id']))
+        why = ' '.join(third['why_flagged_fa'])
+        self.assertIn('از ۲ هشدار «مبلغ غیرعادی برای این تأمین‌کننده» که حسابرس‌ها بررسی کرده‌اند، هیچ‌کدام تأیید نشد.', why)
+        self.assertIn('برای همین تأمین‌کننده، هر ۲ هشدار این نوع نادرست دانسته شده است.', why)
+        self.assertEqual(third['confidence_basis_fa'], 'از ۲ تصمیم قبلی')
+
+    def test_with_enough_decisions_a_model_learns_which_alerts_get_confirmed(self):
+        rng = random.Random(3)
+        rows = []
+        for _ in range(40):  # the auditors confirm the large multiples and reject the small ones
+            times = rng.uniform(3, 12)
+            rows.append(({'times_usual': times, 'robust_z': rng.uniform(4.5, 9)}, int(times > 7)))
+        model = learning._fit(rows)
+        high, factors = model.probability({'times_usual': 11, 'robust_z': 6})
+        low, _ = model.probability({'times_usual': 3.5, 'robust_z': 6})
+        self.assertGreater(high, 0.8)
+        self.assertLess(low, 0.2)
+        self.assertEqual(factors[0], {'feature': 'times_usual', 'higher': True, 'raises': True})
 
     # ── mapping ──
 

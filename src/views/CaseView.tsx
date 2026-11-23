@@ -101,7 +101,7 @@ export default function CaseView({
           <dl className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ['مبلغ درگیر', `${formatRials(alert.financial_exposure)} ریال`, formatMillionRials(alert.financial_exposure)],
-              ['اطمینان شواهد', `${alert.confidence_score.toLocaleString('fa-IR')}٪`, 'بر پایهٔ کامل بودن داده'],
+              ['اطمینان', `${alert.confidence_score.toLocaleString('fa-IR')}٪`, alert.confidence_basis_fa ?? 'بر پایهٔ کامل بودن داده'],
               ['تأمین‌کننده', alert.supplier_name || 'نامشخص', place],
               ['مسئول بررسی', alert.assigned_to || 'تعیین نشده', alert.primary_entity_id],
             ].map(([k, v, sub]) => (

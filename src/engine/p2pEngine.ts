@@ -43,7 +43,7 @@ export const RULE_METADATA: Record<
   P0_AMOUNT_OUTLIER: {
     title_fa: 'مبلغ غیرعادی برای این تأمین‌کننده',
     category_fa: 'رفتار عادی تأمین‌کننده',
-    version: '1.1.0',
+    version: '1.2.0',
     description_fa: 'فاکتوری چند برابر مبلغ معمول همان تأمین‌کننده؛ مبلغ معمول از سابقهٔ خود او یاد گرفته می‌شود، نه از یک سقف ثابت',
   },
   P0_UNUSUAL_PATTERN: {

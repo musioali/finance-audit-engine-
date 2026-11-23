@@ -32,7 +32,7 @@ export default function Overview({
       <PageHead
         eyebrow="نمای کلی"
         title="وضعیت ریسک خرید تا پرداخت"
-        lead={`${formatRials(summary.total_alerts)} هشدار از ${sourceLabel}، به ترتیب شدت ریسک و مبلغ درگیر.`}
+        lead={`${formatRials(summary.total_alerts)} هشدار از ${sourceLabel}، به ترتیب اهمیت.`}
         actions={
           <Button icon={<ArrowLeft className="h-4 w-4" strokeWidth={1.5} />} onClick={onAll}>
             همهٔ هشدارها

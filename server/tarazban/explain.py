@@ -95,6 +95,49 @@ def describe(detector: str, f: dict, where: list[str]) -> tuple[str, list[str]]:
     return 'یافتهٔ تازه', []
 
 
+# Names of the detectors' features, for saying what a model learned from the decisions.
+FEATURE_FA = {
+    'amount': 'مبلغ', 'amount_gap_ratio': 'فاصلهٔ دو مبلغ', 'days_apart': 'فاصلهٔ تاریخ دو فاکتور',
+    'days_vs_routine_gap': 'فاصله نسبت به فاصلهٔ همیشگی', 'match_same': 'شمارهٔ یکسان', 'match_suffix': 'پسوند در شماره',
+    'match_swap': 'جابه‌جایی رقم در شماره', 'routine_invoices': 'تکرار مبلغ همیشگی',
+    'avg_share_of_limit': 'نزدیکی به سقف تأیید', 'one_item': 'یک کالا بودن سفارش‌ها', 'parts': 'تعداد سفارش‌ها',
+    'span_days': 'بازهٔ روزهای سفارش', 'total_over_limit': 'جمع سفارش‌ها نسبت به سقف', 'jump': 'اندازهٔ جهش قیمت',
+    'previous_purchases': 'تعداد خریدهای قبلی', 'unit_price': 'قیمت واحد', 'times_usual': 'چند برابر مبلغ معمول',
+    'robust_z': 'فاصله از پراکندگی معمول', 'log_spread': 'پرنوسانی مبلغ‌های تأمین‌کننده',
+    'previous_invoices': 'تعداد فاکتورهای قبلی', 'amount_size': 'اندازهٔ مبلغ', 'rounder': 'رُندتر بودن از معمول',
+    'supplier_age': 'سابقهٔ تأمین‌کننده', 'gap_vs_usual': 'سکوت پیش از فاکتور', 'same_day': 'فاکتورهای همان روز',
+    'friday': 'تاریخ جمعه', 'year_end': 'روزهای آخر سال', 'isolation_score': 'میزان نادر بودن',
+}
+
+
+def basis_words(title: str, b: dict, confidence: float) -> tuple[str, list[str]]:
+    """Where an alert's confidence comes from: a short label, and lines for the reasons once decisions exist."""
+    n, c = b['reviewed'], b['confirmed']
+    if b['source'] == 'built_in':
+        return 'از قدرت نشانه؛ هنوز بی تصمیم', []
+    if b['source'] == 'model':
+        lines = [f'یادگیری از تصمیم‌ها: مدلی که از {fa(n)} تصمیم روی هشدارهای «{title}» یاد گرفته ({fa(c)} تأیید)، '
+                 f'احتمال تأیید این هشدار را {fa1(confidence)}٪ می‌داند.']
+        effects = [f'{FEATURE_FA.get(x["feature"], x["feature"])} در این هشدار {"بیشتر" if x["higher"] else "کمتر"} از '
+                   f'هشدارهای بررسی‌شده است و احتمال را {"بالا برده" if x["raises"] else "پایین آورده"}'
+                   for x in b['factors']]
+        if effects:
+            lines.append('بیشترین اثر: ' + '؛ '.join(effects) + '.')
+        short = f'مدل، از {fa(n)} تصمیم قبلی'
+    else:
+        outcome = 'هیچ‌کدام تأیید نشد' if c == 0 else 'همه تأیید شد' if c == n else f'{fa(c)} تأیید شد'
+        lines = [f'یادگیری از تصمیم‌ها: از {fa(n)} هشدار «{title}» که حسابرس‌ها بررسی کرده‌اند، {outcome}.']
+        short = f'از {fa(n)} تصمیم قبلی'
+    sn, sc = b.get('supplier_reviewed', 0), b.get('supplier_confirmed', 0)
+    if sn:
+        lines.append(
+            f'برای همین تأمین‌کننده، هر {fa(sn)} هشدار این نوع نادرست دانسته شده است.' if sc == 0
+            else f'برای همین تأمین‌کننده، هر {fa(sn)} هشدار این نوع تأیید شده است.' if sc == sn
+            else f'برای همین تأمین‌کننده، از {fa(sn)} هشدار این نوع {fa(sc)} تأیید شده است.'
+        )
+    return short, lines
+
+
 def _pct(r: dict) -> str:
     """How many of the company's invoices are as extreme: «فقط ۲٫۶٪» or «کمتر از ۰٫۱٪»."""
     p = r['share_pct']

@@ -44,6 +44,8 @@ export interface RiskAlert {
   department: string | null;
   risk_score: number;
   confidence_score: number;
+  /** Where the confidence comes from: the signal's strength, or the auditors' earlier decisions. */
+  confidence_basis_fa?: string;
   financial_exposure: number;
   priority: AlertPriority;
   status: AlertStatus;
