@@ -91,9 +91,29 @@ def day_number(raw):
     return _jalali_days(y, mo, d)
 
 
+def weekday(day: int) -> int:
+    """0 for Saturday through 6 for Friday, from a day_number."""
+    return (day - _GREGORIAN_SHIFT + 5) % 7  # 1970-01-01 was a Thursday
+
+
+def days_to_year_end(day: int) -> int:
+    """Days from a day_number to the last day of its Jalali year (0 on the last day of Esfand)."""
+    y = int(day / 365.2422) + 1
+    while _jalali_days(y, 1, 1) > day:
+        y -= 1
+    while _jalali_days(y + 1, 1, 1) <= day:
+        y += 1
+    return _jalali_days(y + 1, 1, 1) - 1 - day
+
+
 def show_date(raw) -> str:
     m = _DATE.match(std_digits(str(raw or '')).strip())
     return f'{m[1]}/{int(m[2]):02d}/{int(m[3]):02d}' if m else 'بی‌تاریخ'
+
+
+def fa_date(raw) -> str:
+    """A date for a Persian sentence: ۱۴۰۴/۱۲/۲۰."""
+    return show_date(raw).translate(_FA_DIGITS)
 
 
 def decode(data: bytes) -> str:

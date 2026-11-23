@@ -129,7 +129,10 @@ def detect(conn, upload_id: int) -> int:
     """Runs every detector over all rows received so far and stores what is new. Returns how many alerts were added."""
     rows = {k: load_records(conn, k) for k in KINDS}
     profiles = baselines.learn(rows)
-    findings = [f for d in DETECTORS for f in d.run(rows[d.kind], profiles)]
+    found = {d.id: d.run(rows[d.kind], profiles) for d in DETECTORS}
+    extra = {d.id for d in DETECTORS if getattr(d, 'supplementary', False)}
+    covered = {i for name, fs in found.items() if name not in extra for f in fs for i in f.records}
+    findings = [f for name, fs in found.items() for f in fs if name not in extra or not covered & set(f.records)]
     versions = {d.id: d.version for d in DETECTORS}
 
     known, by_record, by_key = {}, defaultdict(set), {}

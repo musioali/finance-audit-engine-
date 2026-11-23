@@ -6,6 +6,9 @@ bills anywhere between 5 and 300 million is not flagged for 350 million, one tha
 40 million is flagged for 400 million. Amounts are compared on a log scale with the median and the
 median absolute deviation, which a few odd invoices in the history barely move.
 
+A supplier's routine amounts (baselines.py: a monthly fee and the like) are left out of its history,
+so a fixed fee billed half the time does not make every other invoice look many times "usual".
+
 The thresholds were set on simulated data (200,000 invoices from 500 suppliers of different spread,
 with inflation): about 40 alerts with nothing planted, and two in three tenfold invoices planted on
 suppliers with a narrow spread found. The auditors' decisions are what will tune them on real data.
@@ -24,14 +27,14 @@ MIN_SPREAD = 0.1  # a supplier who always bills the same amount still gets this 
 class AmountOutlier:
     id = 'P0_AMOUNT_OUTLIER'
     title = 'مبلغ غیرعادی برای این تأمین‌کننده'
-    version = '1.0.0'
+    version = '1.1.0'
     kind = 'invoice'
 
     def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
         by_id = {r['_id']: r for r in rows}
         findings = []
         for profile in profiles.values():
-            invoices = profile.invoices
+            invoices = [inv for inv in profile.invoices if inv[1] not in profile.routines]
             for k in range(HISTORY_MIN, len(invoices)):
                 _, amount, record = invoices[k]
                 earlier = [a for _, a, _ in invoices[max(0, k - HISTORY_MAX):k]]

@@ -9,7 +9,8 @@ detection.
 
 To add a detector, write a class with `id`, `title`, `version`, `kind` and `run(rows, profiles)`,
 and list it in DETECTORS. Raise `version` whenever what it finds changes: each logged decision keeps
-the version it was made on.
+the version it was made on. A detector with `supplementary = True` (a model that looks at everything)
+reports only rows that no other detector reports.
 """
 from dataclasses import dataclass, field
 
@@ -69,6 +70,7 @@ from .duplicate_invoice import DuplicateInvoice  # noqa: E402
 from .invoice_without_po import InvoiceWithoutPo  # noqa: E402
 from .price_jump import PriceJump  # noqa: E402
 from .split_order import SplitOrder  # noqa: E402
+from .unusual_pattern import UnusualPattern  # noqa: E402
 
-DETECTORS = [DuplicateInvoice(), InvoiceWithoutPo(), SplitOrder(), PriceJump(), AmountOutlier()]
+DETECTORS = [DuplicateInvoice(), InvoiceWithoutPo(), SplitOrder(), PriceJump(), AmountOutlier(), UnusualPattern()]
 TITLES = {d.id: d.title for d in DETECTORS}

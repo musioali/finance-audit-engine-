@@ -4,7 +4,8 @@ auditor reads. A language model can later take this module's place and write fro
 which keeps every number it states tied to a row of data.
 """
 from .detectors import supplier_label
-from .text import fa, fa1, show_date
+from .features import YEAR_END_DAYS
+from .text import fa, fa1, fa_date, show_date
 
 
 def _how_duplicate(f: dict) -> str:
@@ -80,7 +81,70 @@ def describe(detector: str, f: dict, where: list[str]) -> tuple[str, list[str]]:
             ],
         )
 
+    if detector == 'P0_UNUSUAL_PATTERN':
+        reasons = f['reasons']
+        return (
+            f'ترکیب نادر در فاکتور {f["invoice_number"]} از {f["supplier"]}: {"، ".join(_short(r) for r in reasons)}.',
+            [f'مبلغ {fa(f["amount_rials"])} ریال، تاریخ {fa_date(f["invoice_date"])}، در {where[0]}.']
+            + [_long(r, f) for r in reasons]
+            + [f'هیچ قاعدهٔ ثابتی این فاکتور را نگرفته است. مدل از همهٔ {fa(f["company_invoices"])} فاکتور شرکت '
+               'یاد گرفته که این ترکیب نادر است. نادر بودن به معنی نادرست بودن نیست؛ تصمیم حسابرس به مدل یاد می‌دهد '
+               'کدام نادرها مهم‌اند.'],
+        )
+
     return 'یافتهٔ تازه', []
+
+
+def _pct(r: dict) -> str:
+    """How many of the company's invoices are as extreme: «فقط ۲٫۶٪» or «کمتر از ۰٫۱٪»."""
+    p = r['share_pct']
+    return 'کمتر از ۰٫۱٪' if p < 0.1 else f'فقط {fa1(p)}٪'
+
+
+def _short(r: dict) -> str:
+    """A few words for one rare number of an invoice, for the summary line."""
+    name = r['feature']
+    if name == 'times_usual':
+        return f'{fa1(r["times"])} برابر مبلغ معمول'
+    if name == 'same_day':
+        return f'{fa(r["count"])} فاکتور در یک روز'
+    return {
+        'amount_size': 'مبلغ بسیار بزرگ',
+        'rounder': 'مبلغ رُندتر از معمول',
+        'supplier_age': 'تأمین‌کنندهٔ تازه',
+        'gap_vs_usual': 'بعد از سکوتی طولانی',
+        'friday': 'تاریخ جمعه',
+        'year_end': 'روزهای آخر سال',
+    }.get(name, name)
+
+
+def _long(r: dict, f: dict) -> str:
+    """One sentence for one rare number, with how many of the company's invoices are as extreme."""
+    name, pct = r['feature'], _pct(r)
+    if name == 'times_usual':
+        return (f'مبلغ {fa1(r["times"])} برابر میانهٔ فاکتورهای قبلی همین تأمین‌کننده ({fa(r["usual_rials"])} ریال) است؛ '
+                f'{pct} فاکتورهای شرکت چنین فاصله‌ای با مبلغ معمولشان دارند.')
+    if name == 'amount_size':
+        return f'{pct} فاکتورهای شرکت این‌قدر بزرگ‌اند.'
+    if name == 'rounder':
+        whose = 'مبلغ‌های این تأمین‌کننده' if r['own_habit'] else 'مبلغ فاکتورهای شرکت'
+        return (f'مبلغ فقط {fa(r["digits"])} رقم غیرصفر دارد، در حالی که {whose} معمولاً '
+                f'{fa(r["usual_digits"])} رقم غیرصفر دارند؛ {pct} فاکتورها این‌قدر رُندتر از معمول‌اند.')
+    if name == 'supplier_age':
+        if r['days'] == 0:
+            return f'این اولین روزی است که این تأمین‌کننده فاکتور دارد؛ {pct} فاکتورها از تأمین‌کننده‌ای این‌قدر تازه‌اند.'
+        return f'اولین فاکتور این تأمین‌کننده {fa(r["days"])} روز پیش از این فاکتور بوده است؛ {pct} فاکتورها از تأمین‌کننده‌ای این‌قدر تازه‌اند.'
+    if name == 'gap_vs_usual':
+        return (f'این فاکتور بعد از {fa(r["gap_days"])} روز بی‌فاکتوری آمده، در حالی که فاصلهٔ معمول این تأمین‌کننده '
+                f'{fa(r["usual_gap_days"])} روز است.')
+    if name == 'same_day':
+        return (f'{fa(r["count"])} فاکتور از این تأمین‌کننده با تاریخ همین روز ثبت شده است؛ '
+                f'در روزهای پرکار معمولاً {fa(r["busy_day"])} فاکتور دارد.')
+    if name == 'friday':
+        return f'تاریخ فاکتور جمعه است؛ {pct} فاکتورهای شرکت جمعه صادر شده‌اند.'
+    if name == 'year_end':
+        return f'تاریخ فاکتور در {fa(YEAR_END_DAYS)} روز آخر سال است؛ {pct} فاکتورهای شرکت در این روزها صادر شده‌اند.'
+    return name
 
 
 def _step_words(detector: str, step: dict, rec: dict, facts: dict) -> tuple[str, str, str | None]:
@@ -94,6 +158,8 @@ def _step_words(detector: str, step: dict, rec: dict, facts: dict) -> tuple[str,
     if role == 'outlier':
         s = step['facts']
         return 'فاکتور با مبلغ غیرعادی', f'{fa1(s["times_usual"])} برابر میانهٔ فاکتورهای قبلی ({fa(s["usual"])} ریال)', None
+    if role == 'pattern':
+        return 'فاکتور با ترکیب نادر', '، '.join(_short(r) for r in facts['reasons']), None
     if role == 'price':
         s = step['facts']
         return 'سفارش خرید با قیمت بالاتر', f'قیمت واحد {fa(s["unit_price"])} ریال، میانهٔ قبلی {fa(s["median"])} ریال', None

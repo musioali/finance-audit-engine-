@@ -43,8 +43,14 @@ export const RULE_METADATA: Record<
   P0_AMOUNT_OUTLIER: {
     title_fa: 'مبلغ غیرعادی برای این تأمین‌کننده',
     category_fa: 'رفتار عادی تأمین‌کننده',
-    version: '1.0.0',
+    version: '1.1.0',
     description_fa: 'فاکتوری چند برابر مبلغ معمول همان تأمین‌کننده؛ مبلغ معمول از سابقهٔ خود او یاد گرفته می‌شود، نه از یک سقف ثابت',
+  },
+  P0_UNUSUAL_PATTERN: {
+    title_fa: 'ترکیب نادر در فاکتور',
+    category_fa: 'یادگیری ماشین بی‌نظارت',
+    version: '1.0.0',
+    description_fa: 'فاکتوری که ترکیب ویژگی‌هایش در دادهٔ خود شرکت نادر است (Isolation Forest)؛ دلیل‌ها و میزان نادر بودن هر کدام کنار هشدار می‌آید',
   },
   P0_SUPPLIER_RISK: {
     title_fa: 'ریسک تأمین‌کننده و تغییر حساب بانکی',

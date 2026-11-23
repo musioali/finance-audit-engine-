@@ -3,12 +3,14 @@ Checks the engine against files shaped like real ERP exports.
 Run from server/:  .venv/Scripts/python -m unittest -v
 """
 import json
+import math
+import random
 import time
 import unittest
 
 from tarazban import pipeline
 from tarazban.store import connect
-from tarazban.text import norm_text, parse_amount, read_csv
+from tarazban.text import day_number, norm_text, parse_amount, read_csv, weekday
 
 PO_HEAD = 'po_id,supplier_id,supplier_name,item_code,unit,warehouse_code,quantity,unit_price,line_amount,po_date,approved_by,approval_limit_rials'
 INV_HEAD = 'invoice_id,invoice_number,po_id,supplier_id,supplier_name,invoice_date,total_amount,warehouse_code'
@@ -125,9 +127,12 @@ class Engine(unittest.TestCase):
             for i in range(20000)
         ]
         t = time.perf_counter()
-        result = self.send('big.csv', rows)
+        self.send('big.csv', rows)
         seconds = time.perf_counter() - t
-        self.assertEqual(result['alerts_added'], 0)
+        self.assertEqual(self.alerts('P0_DUPLICATE_INVOICE'), [])
+        # the model names at most 1 in 1,000 invoices, the rarest of this file
+        self.assertLessEqual(len(self.alerts('P0_UNUSUAL_PATTERN')), 20)
+        self.assertEqual(len(self.alerts()), len(self.alerts('P0_UNUSUAL_PATTERN')))
         self.assertLess(seconds, 10, f'took {seconds:.1f} s')
 
     def test_alert_ids_are_unique_and_bad_cells_are_counted(self):
@@ -184,6 +189,41 @@ class Engine(unittest.TestCase):
         self.assertEqual(out['evidence']['times_usual'], 8)
         self.assertEqual(out['p2p_chain'][0]['source_file'], 'bahman.csv')
         self.assertIn('۸ برابر', out['summary_fa'])
+
+    def test_a_fixed_fee_does_not_make_the_suppliers_other_invoices_look_unusual(self):
+        rows = [INV_HEAD]
+        for w in range(20):  # a weekly 12M fee, and between fees ordinary invoices of 50 to 70M
+            rows.append(f'FEE-{w},{5000 + w},PO-F{w},SUP-F,پشتیبانی شبکه,{from_mehr(w * 7)},12000000,W')
+            if w < 15:
+                rows.append(f'VAR-{w},{6000 + w},PO-V{w},SUP-F,پشتیبانی شبکه,{from_mehr(w * 7 + 3)},{(50 + w % 5 * 5) * 1_000_000},W')
+        self.send('support.csv', rows)
+        self.assertEqual(self.alerts('P0_AMOUNT_OUTLIER'), [])
+        self.send('azar.csv', [INV_HEAD, f'BIG,7000,PO-B,SUP-F,پشتیبانی شبکه,{from_mehr(141)},600000000,W'])
+        (out,) = self.alerts('P0_AMOUNT_OUTLIER')
+        self.assertEqual(out['evidence']['usual_median_rials'], 60_000_000)
+
+    def test_a_new_suppliers_big_round_first_invoice_is_found_by_the_model(self):
+        rng = random.Random(7)
+        rows = [INV_HEAD]
+        for s in range(40):
+            base = rng.uniform(20, 200) * 1_000_000
+            for i in range(60):
+                day = rng.randrange(150)
+                if weekday(day_number(from_mehr(day))) == 6:  # nobody bills on Friday
+                    day = day - 1 if day else 1
+                amount = round(base * math.exp(rng.gauss(0, 0.2)), -3)
+                rows.append(f'S{s}-{i},{s}-{1000 + i},PO-{s}-{i},SUP-{s},شرکت {s},{from_mehr(day)},{int(amount)},W')
+        self.send('mehr-to-bahman.csv', rows)
+        self.assertLessEqual(len(self.alerts('P0_UNUSUAL_PATTERN')), 2)  # at most 1 in 1,000 invoices
+
+        self.send('bahman.csv', [INV_HEAD, f'NEW-1,1,PO-N1,SUP-NEW,بازرگانی نوپا,{from_mehr(140)},9000000000,W'])
+        found = [a for a in self.alerts('P0_UNUSUAL_PATTERN') if a['supplier_id'] == 'SUP-NEW']
+        self.assertEqual(len(found), 1)
+        reasons = [r['feature'] for r in found[0]['evidence']['reasons']]
+        self.assertIn('supplier_age', reasons)
+        self.assertIn('تأمین‌کنندهٔ تازه', found[0]['summary_fa'])
+        self.assertEqual(found[0]['confidence_score'], 50)
+        self.assertEqual(found[0]['p2p_chain'][0]['source_file'], 'bahman.csv')
 
     # ── mapping ──
 
