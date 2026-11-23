@@ -17,9 +17,10 @@ import Alerts, { Filters, NO_FILTERS } from './views/Alerts';
 import CaseView from './views/CaseView';
 import DataView from './views/DataView';
 import Welcome from './views/Welcome';
+import Guide from './views/Guide';
 import MappingView from './views/MappingView';
 
-type Route = { page: 'overview' } | { page: 'alerts' } | { page: 'case'; id: string } | { page: 'data' };
+type Route = { page: 'overview' } | { page: 'alerts' } | { page: 'case'; id: string } | { page: 'data' } | { page: 'guide' };
 type Source = { sample: boolean; files: string[] };
 
 // A link like #/sample or #/sample/case/<id> opens the app with the sample data loaded.
@@ -34,6 +35,8 @@ function readRoute(): Route {
   if (page === 'alerts') return { page: 'alerts' };
   if (page === 'data') return { page: 'data' };
   if (page === 'case' && id) return { page: 'case', id: decodeURIComponent(id) };
+  // the public demo opens on the page that says what Tarazban is and how it works
+  if (page === 'guide' || (DEMO && !page)) return { page: 'guide' };
   return { page: 'overview' };
 }
 
@@ -257,6 +260,15 @@ export default function App() {
         onCancel={() => setPending((p) => p.slice(1))}
       />
     );
+  } else if (route.page === 'guide') {
+    const first = engine.alerts.reduce<RiskAlert | undefined>((top, a) => (!top || a.risk_score > top.risk_score ? a : top), undefined);
+    view = (
+      <Guide
+        onCase={() => (first ? open(first) : go({ page: 'alerts' }))}
+        onOverview={() => go({ page: 'overview' })}
+        repoUrl={REPO_URL}
+      />
+    );
   } else if (route.page === 'data') {
     view = (
       <DataView
@@ -388,11 +400,15 @@ export default function App() {
       </header>
 
       <main className="mx-auto w-full max-w-[1240px] px-4 pb-24 pt-14 md:px-8 md:pt-16">
-        {DEMO && (
+        {DEMO && route.page !== 'guide' && (
           <p className="mx-auto -mt-4 mb-10 w-fit max-w-full rounded-[22px] bg-white/55 px-5 py-2.5 text-center text-[14px] leading-7 text-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_0_0_1px_rgba(255,255,255,0.6)]">
-            نسخهٔ نمایشی با دادهٔ ساختگی. فایل واقعی با موتور ترازبان روی سرور خود شرکت بررسی می‌شود.{' '}
+            نسخهٔ نمایشی با دادهٔ ساختگی.{' '}
+            <a href="#/guide" className="font-semibold text-level underline-offset-4 hover:underline">
+              ترازبان چطور کار می‌کند؟
+            </a>
+            <span aria-hidden="true" className="mx-2 text-ink/20">|</span>
             <a href={REPO_URL} className="font-semibold text-level underline-offset-4 hover:underline">
-              کد و راهنما
+              کد در گیت‌هاب
             </a>
           </p>
         )}
