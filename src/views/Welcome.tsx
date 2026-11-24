@@ -38,7 +38,7 @@ export default function Welcome({
         <input
           ref={input}
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           multiple
           className="hidden"
           onChange={(e) => {

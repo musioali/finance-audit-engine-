@@ -85,14 +85,14 @@ export default function DataView({
             <span className="glass-tile flex h-14 w-14 items-center justify-center rounded-full">
               <Upload className="h-6 w-6 text-ink" strokeWidth={1.5} />
             </span>
-            <div className="mt-5 text-[19px] font-bold">فایل CSV فاکتورها یا سفارش‌های خرید را اینجا رها کنید</div>
+            <div className="mt-5 text-[19px] font-bold">فایل اکسل یا CSV فاکتورها یا سفارش‌های خرید را اینجا رها کنید</div>
             <p className="mt-2 max-w-lg text-[15px] leading-8 text-muted">
               اگر نام ستون‌ها با قالب‌های پایین فرق دارد، یک بار می‌پرسیم هر ستون چیست. حروف عربی، ارقام فارسی و تاریخ شمسی یکسان‌سازی می‌شوند.
             </p>
             <input
               ref={input}
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               multiple
               className="hidden"
               onChange={(e) => {

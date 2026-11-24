@@ -2,11 +2,13 @@
 Checks the engine against files shaped like real ERP exports.
 Run from server/:  .venv/Scripts/python -m unittest -v
 """
+import io
 import json
 import math
 import random
 import time
 import unittest
+from datetime import datetime
 
 from tarazban import demo, learning, pipeline
 from tarazban.store import connect
@@ -277,6 +279,65 @@ class Engine(unittest.TestCase):
         self.assertEqual(len(learned), 1)
         self.assertIn('برای همین تأمین‌کننده، هر ۲ هشدار این نوع نادرست دانسته شده است.', learned[0]['why_flagged_fa'])
         self.assertEqual(len(out['audit_logs']), 2)
+
+    # ── Excel and report-shaped exports ──
+
+    @staticmethod
+    def workbook(sheets: dict) -> bytes:
+        from openpyxl import Workbook
+        book = Workbook()
+        book.remove(book.active)
+        for title, rows in sheets.items():
+            sheet = book.create_sheet(title)
+            for r in rows:
+                sheet.append(r)
+        out = io.BytesIO()
+        book.save(out)
+        return out.getvalue()
+
+    def test_an_excel_report_is_read_from_under_its_title_to_above_its_sum(self):
+        head = ['ردیف', 'شماره فاکتور', 'تاریخ', 'کد طرف حساب', 'نام طرف حساب', 'شماره سفارش', 'مبلغ کل']
+        data = self.workbook({
+            'راهنما': [['این فایل خروجی نرم‌افزار حسابداری است'], ['نسخهٔ ۳']],
+            'فاکتورها': [
+                ['گزارش فاکتورهای خرید'],  # row 1
+                ['از تاریخ', '1404/07/01', 'تا تاریخ', '1404/09/30'],  # 2
+                [],  # 3
+                head,  # 4
+                ['گروه: تأمین‌کنندگان داخلی'],  # 5
+                [1, 5001, '1404/07/05', 'S1', 'شرکت الف', 'PO-1', 155000000],  # 6
+                [2, 'F-5002', datetime(2025, 10, 1), 'S1', 'شرکت الف', 'PO-2', '98,500,000/00'],  # 7, a real Excel date
+                head,  # 8, the column names again on the next printed page
+                [3, 5003, '1404/08/12', 'S2', 'شرکت ب', 'PO-3', 42000000.0],  # 9
+                ['جمع کل', None, None, None, None, None, 295500000],  # 10
+                ['تهیه‌کننده: واحد مالی'],  # 11
+            ],
+        })
+        first = pipeline.receive(self.conn, 'خرید-پاییز.xlsx', data)
+        self.assertEqual(first['status'], 'needs_mapping')
+        self.assertEqual(first['file_name'], 'خرید-پاییز.xlsx، برگهٔ «فاکتورها»')
+        self.assertEqual(first['headers'], head)
+        done = pipeline.ingest(self.conn, first['upload_id'], 'invoice', first['suggestions']['invoice'], True)
+        self.assertEqual(done['rows'], 3)
+        recs = pipeline.load_records(self.conn, 'invoice')
+        self.assertEqual([r['_row'] for r in recs], [6, 7, 9])  # the rows a person sees in Excel
+        self.assertEqual(recs[0]['_file'], 'خرید-پاییز.xlsx، برگهٔ «فاکتورها»')
+        self.assertEqual([r['invoice_number'] for r in recs], ['5001', 'F-5002', '5003'])
+        self.assertEqual([parse_amount(r['total_amount']) for r in recs], [155000000, 98500000, 42000000])
+        self.assertEqual(day_number(recs[1]['invoice_date']), day_number('1404/07/09'))  # 2025-10-01
+
+    def test_a_csv_report_with_a_title_and_a_sum_row_is_read_the_same_way(self):
+        self.send('report.csv', ['گزارش خرید پاییز', INV_HEAD, 'A,F-1,PO-1,S1,s,1404/07/01,100,W', 'جمع کل,,,,,,100,'])
+        recs = pipeline.load_records(self.conn, 'invoice')
+        self.assertEqual([(r['_row'], r['invoice_number']) for r in recs], [(3, 'F-1')])
+
+    def test_old_excel_and_web_pages_saved_as_excel_get_a_clear_message(self):
+        with self.assertRaises(pipeline.BadFile) as old:
+            pipeline.receive(self.conn, 'old.xls', bytes.fromhex('d0cf11e0a1b11ae1') + bytes(100))
+        self.assertIn('.xls', str(old.exception))
+        with self.assertRaises(pipeline.BadFile) as web:
+            pipeline.receive(self.conn, 'report.xls', '<html><body><table><tr><td>1</td></tr></table></body></html>'.encode())
+        self.assertIn('صفحهٔ وب', str(web.exception))
 
     # ── mapping ──
 

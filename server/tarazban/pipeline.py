@@ -15,13 +15,13 @@ import hashlib
 import json
 from collections import Counter, defaultdict
 
-from . import baselines, learning
+from . import baselines, learning, tables
 from . import mapping as mapper
 from .detectors import DETECTORS, TITLES
 from .explain import basis_words, chain, describe, where
 from .schema import KINDS
 from .store import now
-from .text import day_number, decode, norm_text, parse_amount, read_csv
+from .text import day_number, norm_text, parse_amount, read_csv
 
 
 class BadFile(ValueError):
@@ -31,20 +31,30 @@ class BadFile(ValueError):
 STATUSES = ('NEW', 'IN_REVIEW', 'NEEDS_INFO', 'CONFIRMED', 'FALSE_POSITIVE', 'CLOSED')
 
 
-def _table(text: str) -> tuple[list[str], list[tuple[int, list[str]]]]:
-    rows = read_csv(text)
-    if len(rows) < 2:
-        raise BadFile('فایل باید دست‌کم یک سطر عنوان و یک سطر داده داشته باشد.')
-    headers = [h.strip() or f'ستون {i + 1}' for i, h in enumerate(rows[0][1])]
-    return headers, rows[1:]
+def _table(content: str) -> tuple[list[str], list[tuple[int, list[str]]]]:
+    """Column names and data rows of a received file, from the rows kept for it until it is read in."""
+    try:
+        rows = [(n, cells) for n, cells in json.loads(content)['rows']]
+    except (ValueError, TypeError, KeyError):  # kept before Excel was read: the CSV text itself
+        rows = read_csv(content)
+    names, data = tables.tidy(rows)
+    if not names or not data:
+        raise BadFile('فایل باید دست‌کم یک سطر نام ستون‌ها و یک سطر داده داشته باشد.')
+    return [h or f'ستون {i + 1}' for i, h in enumerate(names)], data
 
 
 def receive(conn, file_name: str, data: bytes) -> dict:
-    text = decode(data)
-    headers, rows = _table(text)
+    try:
+        rows, sheet = tables.read(data)
+    except tables.Unreadable as e:
+        raise BadFile(str(e)) from e
+    content = json.dumps({'rows': rows}, ensure_ascii=False)
+    headers, rows = _table(content)
+    if sheet:  # a workbook with several sheets: evidence names the sheet too
+        file_name = f'{file_name}، برگهٔ «{sheet}»'
     cur = conn.execute(
         'INSERT INTO uploads (file_name, content, headers, status, created_at) VALUES (?, ?, ?, ?, ?)',
-        (file_name, text, json.dumps(headers, ensure_ascii=False), 'pending', now()),
+        (file_name, content, json.dumps(headers, ensure_ascii=False), 'pending', now()),
     )
     upload_id = cur.lastrowid
     conn.commit()
