@@ -1,4 +1,5 @@
 """A unit price far above the median of the same item's recent purchases (same unit), across every file received."""
+import re
 from collections import defaultdict
 
 from ..text import day_number, norm_text, parse_amount
@@ -7,6 +8,29 @@ from . import Finding, Step, or_none, supplier_label
 PRICE_JUMP = 1.45  # flag a price more than 45% above the recent median
 PRICE_HISTORY_MIN = 3
 PRICE_HISTORY_MAX = 6
+
+# lump-sum / project units do not have a comparable per-unit price
+NON_UNIT_UNITS = {'JB', 'JOB', 'LOT', 'LS', 'LUMP SUM', 'LUMPSUM', 'پروژه', 'مقطوع', 'مورد'}
+
+# shipping/handling charges and accounting/continuation lines have no standard unit price
+NON_ITEM_PHRASES = {
+    'SHIPPING', 'FREIGHT', 'POSTAGE', 'HANDLING', 'DELIVERY',
+    'ACCOUNTING CHANGES', 'ACCOUNTING CHANGE', 'ADJUSTMENT', 'CONTINUE',
+    'حمل', 'کرایه', 'کرایه حمل', 'هزینه حمل', 'ارسال', 'هزینه ارسال', 'باربری', 'پست', 'اصلاحیه', 'تعدیل',
+}
+CHARGE_WORDS = {
+    'SHIPPING', 'FREIGHT', 'POSTAGE', 'HANDLING', 'DELIVERY', 'CHARGE', 'CHARGES', 'FEE', 'FEES', 'AND',
+    'حمل', 'ونقل', 'نقل', 'کرایه', 'ارسال', 'هزینه', 'باربری', 'پست', 'و',
+}
+
+
+def _not_unit_priced(item: str, unit: str) -> bool:
+    if unit in NON_UNIT_UNITS:
+        return True
+    if item in NON_ITEM_PHRASES:
+        return True
+    words = [w for w in re.split(r'[\s/\-&،,.]+', item) if w]
+    return bool(words) and all(w in CHARGE_WORDS for w in words)
 
 
 class PriceJump:
@@ -20,10 +44,10 @@ class PriceJump:
         for r in rows:
             price = parse_amount(r.get('unit_price'))
             item = norm_text(r.get('item_code')).upper()
-            if not item or price is None or price <= 0:
+            unit = norm_text(r.get('unit')).upper()
+            if not item or price is None or price <= 0 or _not_unit_priced(item, unit):
                 continue
-            by_item[(item, norm_text(r.get('unit')))].append((r, price, day_number(r.get('po_date'))))
-
+            by_item[(item, unit)].append((r, price, day_number(r.get('po_date'))))
         findings = []
         for lines in by_item.values():
             lines.sort(key=lambda x: (x[2] if x[2] is not None else float('inf'), x[0]['_id']))
