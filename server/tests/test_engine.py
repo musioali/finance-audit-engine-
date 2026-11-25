@@ -207,6 +207,22 @@ class Engine(unittest.TestCase):
         self.assertEqual(self.alerts('P0_AMOUNT_OUTLIER'), [])
         self.assertEqual(self.alerts('P0_DUPLICATE_INVOICE'), [])
 
+    def test_a_cancelled_or_returned_invoice_with_a_positive_amount_is_left_out(self):
+        rows = ['شماره,شماره فاکتور,تاریخ,کد تأمین کننده,عنوان تأمین کننده,جمع خالص,وضعیت,موضوع صورتحساب']
+        for i in range(20):
+            rows.append(f'{i},F-{i},{from_mehr(i * 5)},S1,شرکت الف,{50_000_000 + i * 1_000_000},ثبت,اصلی')
+        rows += [
+            f'30,F-30,{from_mehr(101)},S1,شرکت الف,900000000,ابطال شده,اصلی',  # Sepidar: the cancelled one itself
+            f'31,F-31,{from_mehr(102)},S1,شرکت الف,800000000,باطل شده,اصلی',  # the tax system's status
+            f'32,F-32,{from_mehr(103)},S1,شرکت الف,850000000,تایید شده,برگشت از فروش',  # a return, positive
+            f'33,F-3,{from_mehr(104)},S1,شرکت الف,53000000,تایید شده,ابطالی',  # cancels F-3 under its number
+        ]
+        first = pipeline.receive(self.conn, 'خرید.csv', '\n'.join(rows).encode())
+        mapping = first['suggestions']['invoice']
+        self.assertEqual((mapping['status'], mapping['doc_type']), ('وضعیت', 'موضوع صورتحساب'))
+        pipeline.ingest(self.conn, first['upload_id'], 'invoice', mapping, True)
+        self.assertEqual(self.alerts(), [])
+
     def test_a_fixed_fee_does_not_make_the_suppliers_other_invoices_look_unusual(self):
         rows = [INV_HEAD]
         for w in range(20):  # a weekly 12M fee, and between fees ordinary invoices of 50 to 70M

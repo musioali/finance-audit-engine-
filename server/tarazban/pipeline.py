@@ -17,7 +17,7 @@ from collections import Counter, defaultdict
 
 from . import baselines, learning, tables
 from . import mapping as mapper
-from .detectors import DETECTORS, TITLES
+from .detectors import DETECTORS, TITLES, voided
 from .explain import basis_words, chain, describe, where
 from .schema import KINDS
 from .store import now
@@ -139,7 +139,7 @@ def load_records(conn, kind: str | None = None) -> list[dict]:
 
 def detect(conn, upload_id: int) -> int:
     """Runs every detector over all rows received so far and stores what is new. Returns how many alerts were added."""
-    rows = {k: load_records(conn, k) for k in KINDS}
+    rows = {k: [r for r in load_records(conn, k) if not voided(r)] for k in KINDS}
     profiles = baselines.learn(rows)
     primary = [d for d in DETECTORS if not getattr(d, 'supplementary', False)]
     extra = [d for d in DETECTORS if getattr(d, 'supplementary', False)]

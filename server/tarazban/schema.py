@@ -62,6 +62,9 @@ INVOICE = Kind(
         Field('invoice_id', 'شناسهٔ سند در نرم‌افزار', aliases=(
             'doc_id', 'id', 'شماره سند', 'شناسه سند', 'شناسه', 'شماره')),
         WAREHOUSE,
+        # a cancelled or returned document often keeps its positive amount and says so only here
+        Field('status', 'وضعیت سند', aliases=('status', 'وضعیت', 'وضعیت فاکتور', 'وضعیت صورتحساب', 'وضعیت سند')),
+        Field('doc_type', 'نوع یا موضوع سند', aliases=('doc_type', 'type', 'موضوع صورتحساب', 'نوع سند', 'نوع فاکتور')),
     ),
     core=('invoice_number', 'supplier_id', 'invoice_date', 'total_amount', 'po_id'),
 )

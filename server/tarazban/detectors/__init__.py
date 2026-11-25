@@ -56,6 +56,15 @@ def supplier_key(r: dict) -> str:
     return norm_text(r.get('supplier_id') or r.get('supplier_name')).upper()
 
 
+# Sepidar «ابطال شده»; the tax system's «باطل شده», «ابطالی», «برگشت از فروش»; English exports' void and credit notes
+VOID = re.compile(r'ابطال|باطل|برگشت|مرجوع|لغو|cancel|void|revers|credit (note|memo)|return', re.IGNORECASE)
+
+
+def voided(r: dict) -> bool:
+    """A cancelled document or a return, whatever the sign of its amount: not a purchase to judge."""
+    return bool(VOID.search(norm_text(f"{r.get('status', '')} {r.get('doc_type', '')}")))
+
+
 def placeholder(r: dict) -> bool:
     name = norm_text(r.get('supplier_name') or r.get('supplier_id')).replace('أ', 'ا')
     return not name or bool(PLACEHOLDER.search(name))
