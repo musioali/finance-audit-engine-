@@ -56,7 +56,7 @@ class UnusualPattern:
     kind = 'invoice'
     supplementary = True
 
-    def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
+    def run(self, rows: list[dict], profiles: dict, covered: set[int] = frozenset()) -> list[Finding]:
         invoices = feats.build(profiles)
         if len(invoices) < MIN_INVOICES:
             return []
@@ -64,11 +64,14 @@ class UnusualPattern:
         scores = isolation_scores(x)
         columns = np.sort(x, axis=0)
         by_id = {r['_id']: r for r in rows}
+        limit = max(1, int(len(invoices) * SHARE_MAX))
         findings = []
-        for k in np.argsort(-scores)[: max(1, int(len(invoices) * SHARE_MAX))]:
-            if scores[k] < SCORE_MIN:
+        for k in np.argsort(-scores):
+            if scores[k] < SCORE_MIN or len(findings) >= limit:
                 break
             inv = invoices[k]
+            if inv.record in covered:
+                continue
             reasons = self._reasons(inv, x[k], columns)
             findings.append(self._finding(by_id[inv.record], inv, float(scores[k]), reasons, len(invoices)))
         return findings
