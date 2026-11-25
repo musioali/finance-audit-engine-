@@ -339,6 +339,36 @@ class Engine(unittest.TestCase):
             pipeline.receive(self.conn, 'report.xls', '<html><body><table><tr><td>1</td></tr></table></body></html>'.encode())
         self.assertIn('صفحهٔ وب', str(web.exception))
 
+    def test_sepidars_xls_is_excel_2003_xml_and_is_read(self):
+        def row(*cells):
+            out = []
+            for c in cells:
+                if isinstance(c, tuple):  # (column index, value): the cells before it are empty
+                    out.append(f'<Cell ss:Index="{c[0]}"><Data ss:Type="String">{c[1]}</Data></Cell>')
+                elif isinstance(c, float):
+                    out.append(f'<Cell><Data ss:Type="Number">{c:.4f}</Data></Cell>')
+                else:
+                    out.append(f'<Cell><Data ss:Type="String">{c}</Data></Cell>')
+            return '<Row>' + ''.join(out) + '</Row>'
+        sheet = ''.join([
+            row('شماره', 'شماره فاكتور', 'تاريخ', 'كد تأمين كننده', 'عنوان تأمين كننده', 'جمع خالص به ارز پايه'),
+            row('1', '5108', '1403/04/11', '20017', 'شركت الف', 41570000003.0),
+            row('2', (3, '1403/05/02'), '20031', 'شركت ب', 18946000004.0),  # no supplier number in column 2
+        ])
+        xml = ('﻿<?xml version="1.0" encoding="utf-8"?>'
+               '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" '
+               'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'
+               f'<Worksheet ss:Name="Sheet"><Table>{sheet}</Table></Worksheet></Workbook>')
+        first = pipeline.receive(self.conn, 'فاكتور خريد.xls', xml.encode('utf-8'))
+        self.assertEqual(first['headers'][5], 'جمع خالص به ارز پايه')
+        done = pipeline.ingest(self.conn, first['upload_id'], 'invoice', {
+            'invoice_id': 'شماره', 'invoice_number': 'شماره فاكتور', 'invoice_date': 'تاريخ',
+            'supplier_id': 'كد تأمين كننده', 'total_amount': 'جمع خالص به ارز پايه'}, True)
+        self.assertEqual(done['rows'], 2)
+        recs = pipeline.load_records(self.conn, 'invoice')
+        self.assertEqual([(r['invoice_number'], r['invoice_date'], r['total_amount']) for r in recs],
+                         [('5108', '1403/04/11', '41570000003'), ('', '1403/05/02', '18946000004')])
+
     # ── mapping ──
 
     def test_an_unknown_export_is_mapped_once_then_recognised(self):

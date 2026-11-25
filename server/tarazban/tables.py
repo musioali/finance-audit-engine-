@@ -1,5 +1,5 @@
 """
-A received file as rows: CSV or Excel (.xlsx), told apart by content, not by name.
+A received file as rows: CSV, Excel (.xlsx) or Excel 2003 XML, told apart by content, not by name.
 
 Exports from Iranian accounting software are rarely a clean table. Above the column names there is
 often a report title and a date range; inside, a section label alone on its row, the column names
@@ -15,6 +15,7 @@ from .text import decode, norm_text, read_csv
 
 XLSX = b'PK\x03\x04'
 XLS = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'
+SPREADSHEET_ML = 'urn:schemas-microsoft-com:office:spreadsheet'  # Excel 2003 XML
 HEADER_SCAN = 30  # the column names are looked for within this many rows from the top
 TOTAL = re.compile(r'^(جمع|مجموع|total|sum)( کل| نهایی| صفحه| گروه)?\s*:?$')
 
@@ -30,6 +31,8 @@ def read(data: bytes) -> tuple[list[tuple[int, list[str]]], str | None]:
     if data.startswith(XLS):
         raise Unreadable('این فایل اکسل قدیمی (.xls) است. آن را در اکسل باز کنید و با «Save As» به شکل .xlsx یا CSV ذخیره کنید.')
     text = decode(data)
+    if re.match(r'\s*<', text.lstrip('﻿')) and SPREADSHEET_ML in text[:3000]:
+        return read_spreadsheet_ml(text)
     if re.match(r'\s*<', text.lstrip('﻿')) and '<table' in text[:5000].lower():
         raise Unreadable('این فایل در واقع یک صفحهٔ وب است که نرم‌افزار با پسوند اکسل ذخیره کرده. آن را در اکسل باز کنید و '
                          'با «Save As» به شکل .xlsx یا CSV ذخیره کنید.')
@@ -69,6 +72,45 @@ def read_xlsx(data: bytes) -> tuple[list[tuple[int, list[str]]], str | None]:
             sheets.append((ws.title, rows))
     finally:
         book.close()
+    filled = [s for s in sheets if s[1]]
+    if not filled:
+        raise Unreadable('فایل اکسل خالی است.')
+    title, rows = max(filled, key=lambda s: len(s[1]))
+    return rows, (title if len(filled) > 1 else None)
+
+
+def read_spreadsheet_ml(text: str) -> tuple[list[tuple[int, list[str]]], str | None]:
+    """Excel 2003 XML, which Sepidar saves with an .xls name: the sheet with the most filled rows."""
+    import xml.etree.ElementTree as ET
+
+    try:
+        root = ET.fromstring(text.lstrip('﻿'))
+    except ET.ParseError as e:
+        raise Unreadable('فایل اکسل خوانده نشد. آن را در اکسل باز کنید و با «Save As» به شکل .xlsx ذخیره کنید.') from e
+    ns = '{' + SPREADSHEET_ML + '}'
+    sheets = []
+    for ws in root.iter(ns + 'Worksheet'):
+        rows, n = [], 0
+        for row in ws.iter(ns + 'Row'):
+            n = int(row.get(ns + 'Index') or n + 1)  # a skipped empty row moves the count on
+            cells = []
+            for cell in row.findall(ns + 'Cell'):
+                if cell.get(ns + 'Index'):
+                    cells += [''] * (int(cell.get(ns + 'Index')) - 1 - len(cells))
+                data = cell.find(ns + 'Data')
+                value = (data.text or '').strip() if data is not None else ''
+                kind = data.get(ns + 'Type') if data is not None else None
+                if kind == 'Number' and value:
+                    value = _cell(float(value))
+                elif kind == 'DateTime' and value:
+                    value = value[:10]  # 2024-05-19T00:00:00.000: a real Excel date is Gregorian
+                cells.append(value)
+                cells += [''] * int(cell.get(ns + 'MergeAcross') or 0)
+            while cells and not cells[-1]:
+                cells.pop()
+            if cells:
+                rows.append((n, cells))
+        sheets.append((ws.get(ns + 'Name') or '', rows))
     filled = [s for s in sheets if s[1]]
     if not filled:
         raise Unreadable('فایل اکسل خالی است.')
