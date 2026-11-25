@@ -381,6 +381,16 @@ class Engine(unittest.TestCase):
         recs = pipeline.load_records(self.conn, 'invoice')
         self.assertEqual([(r['_row'], r['invoice_number']) for r in recs], [(3, 'F-1')])
 
+    def test_a_sum_with_no_label_is_not_an_invoice(self):
+        self.send('sales.csv', [
+            INV_HEAD + ',tax',
+            'A,F-1,,S1,s,1404/07/01,100,W,9',
+            'B,F-2,,S2,t,1404/07/02,250,W,23',
+            ',,,,,,350,,32',  # Sepidar's grand total: amounts only, no label
+        ])
+        self.assertEqual([r['invoice_number'] for r in pipeline.load_records(self.conn, 'invoice')], ['F-1', 'F-2'])
+        self.assertEqual(pipeline.state(self.conn)['quality_reports'][0]['not_documents_count'], 1)
+
     def test_old_excel_and_web_pages_saved_as_excel_get_a_clear_message(self):
         with self.assertRaises(pipeline.BadFile) as old:
             pipeline.receive(self.conn, 'old.xls', bytes.fromhex('d0cf11e0a1b11ae1') + bytes(100))

@@ -97,9 +97,12 @@ def ingest(conn, upload_id: int, kind_name: str, mapping: dict, confirmed: bool 
 
     # A row's fingerprint is its content plus how many identical rows came before it in the file:
     # the same export received twice adds nothing, while two identical rows in one file stay two.
-    records, repeats = [], Counter()
+    records, repeats, not_documents = [], Counter(), 0
     for line, cells in rows:
         data = {f: (cells[i].strip() if i < len(cells) else '') for f, i in columns.items()}
+        if not any(data.get(f) and (kind.field(f).type != 'date' or day_number(data[f]) is not None) for f in kind.identity):
+            not_documents += 1  # only amounts: a sum the team typed under the table, or a side table
+            continue
         content = json.dumps(data, sort_keys=True, ensure_ascii=False)
         fingerprint = hashlib.sha1(f'{content}#{repeats[content]}'.encode()).hexdigest()
         repeats[content] += 1
@@ -112,6 +115,7 @@ def ingest(conn, upload_id: int, kind_name: str, mapping: dict, confirmed: bool 
     new_rows = conn.total_changes - before
 
     report = quality_report(up['file_name'], kind, mapping, [json.loads(r[5]) for r in records])
+    report['not_documents_count'] = not_documents
     conn.execute('INSERT OR REPLACE INTO quality (file_name, report) VALUES (?, ?)', (up['file_name'], json.dumps(report, ensure_ascii=False)))
     if confirmed:
         conn.execute(

@@ -23,6 +23,7 @@ class Kind:
     label: str
     fields: tuple[Field, ...]
     core: tuple[str, ...]  # fields whose coverage is reported as "the needed columns"
+    identity: tuple[str, ...] = ()  # a row with none of these (a date must be a date) is a sum or a note, not a document
 
     def field(self, name: str) -> Field:
         return next(f for f in self.fields if f.name == name)
@@ -67,6 +68,7 @@ INVOICE = Kind(
         Field('doc_type', 'نوع یا موضوع سند', aliases=('doc_type', 'type', 'موضوع صورتحساب', 'نوع سند', 'نوع فاکتور')),
     ),
     core=('invoice_number', 'supplier_id', 'invoice_date', 'total_amount', 'po_id'),
+    identity=('invoice_number', 'invoice_id', 'supplier_id', 'supplier_name', 'invoice_date'),
 )
 
 PO_LINE = Kind(
@@ -89,6 +91,7 @@ PO_LINE = Kind(
         WAREHOUSE,
     ),
     core=('po_id', 'supplier_id', 'item_code', 'unit_price', 'line_amount', 'po_date', 'approved_by', 'approval_limit_rials'),
+    identity=('po_id', 'supplier_id', 'supplier_name', 'item_code', 'po_date'),
 )
 
 KINDS: dict[str, Kind] = {k.name: k for k in (INVOICE, PO_LINE)}
