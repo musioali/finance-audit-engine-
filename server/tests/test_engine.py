@@ -223,6 +223,25 @@ class Engine(unittest.TestCase):
         pipeline.ingest(self.conn, first['upload_id'], 'invoice', mapping, True)
         self.assertEqual(self.alerts(), [])
 
+    def test_a_swap_in_a_number_the_software_gave_is_not_a_typo(self):
+        rows = [INV_HEAD]
+        for n in range(1, 61):  # Sepidar's running numbers on sales, shared by six customers
+            pair = n in (23, 32)  # one customer, the same price, numbers two digits apart
+            amount, c = (57_340_000, 9) if pair else (40_000_000 + n * 1_000_000, n % 6)
+            rows.append(f'{n},{n},,C{c},مشتری {c},{from_mehr(n // 2)},{amount},W')
+        tax = ['K7QX2M9R4L00000000F903', 'K7QX2M9R4L00000000F930']  # tax IDs, two digits apart
+        rows += [f'T{i},{t},,C1,مشتری 1,{from_mehr(40 + i)},33000000,W' for i, t in enumerate(tax)]
+        self.send('sales.csv', rows)
+        self.assertEqual(self.alerts('P0_DUPLICATE_INVOICE'), [])
+
+        self.send('purchases.csv', [  # a supplier's own number typed twice with a slip is still caught
+            INV_HEAD,
+            f'P1,48213,,S9,شرکت ج,{from_mehr(50)},71000000,W',
+            f'P2,48231,,S9,شرکت ج,{from_mehr(53)},71000000,W',
+        ])
+        (dup,) = self.alerts('P0_DUPLICATE_INVOICE')
+        self.assertEqual(dup['supplier_id'], 'S9')
+
     def test_a_fixed_fee_does_not_make_the_suppliers_other_invoices_look_unusual(self):
         rows = [INV_HEAD]
         for w in range(20):  # a weekly 12M fee, and between fees ordinary invoices of 50 to 70M

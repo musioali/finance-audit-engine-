@@ -5,6 +5,10 @@ A suffix or a swap alone is weak evidence, and it is weaker still when the amoun
 bills routinely: a monthly fee with numbers 1023 and 1032 is two months, not one invoice twice. Such a
 pair is left out when the two are as far apart as the supplier's usual gap for that amount, learned
 from its own history (baselines.py); the same fee twice within a couple of days is still flagged.
+
+A suffix or a swap is a slip of a person typing the supplier's number. A number the software or the
+tax system gave (Sepidar's running number on sales, a 22-character tax ID) is not typed, so for those
+only the same number twice counts.
 """
 import re
 from collections import Counter, defaultdict
@@ -14,6 +18,25 @@ from . import Finding, Step, or_none, supplier_key, supplier_label
 
 DUPLICATE_DAYS = 30  # a suffix or digit swap alone is weak: the two must also be dated this close
 NEAR_AMOUNT_RATIO = 0.01  # same invoice number with amounts within 1% counts as a near match
+TAX_ID = re.compile(r'(?=.*[A-Z])(?=.*\d)[A-Z0-9]{22}')  # the tax system's شماره مالیاتی صورتحساب
+SERIES_DENSITY = 0.5  # a file's numbers fill at least half of their range: one running series
+SERIES_MIN = 50  # numbers, from at least SERIES_PARTIES parties, before a file's numbering is judged
+SERIES_PARTIES = 5
+
+
+def running_series(rows: list[dict]) -> set:
+    """Files whose invoice numbers are one running series shared by many parties: given by the software, not typed."""
+    by_file = defaultdict(list)
+    for r in rows:
+        by_file[r.get('_file')].append(r)
+    out = set()
+    for name, rs in by_file.items():
+        numbers = {int(n) for n in (std_digits(r.get('invoice_number') or '').strip() for r in rs) if n.isdigit()}
+        parties = {supplier_key(r) for r in rs}
+        if (len(numbers) >= SERIES_MIN and len(numbers) >= 0.9 * len(rs) and len(parties) >= SERIES_PARTIES
+                and len(numbers) / (max(numbers) - min(numbers) + 1) >= SERIES_DENSITY):
+            out.add(name)
+    return out
 
 
 def invoice_key(raw: str) -> str:
@@ -39,16 +62,18 @@ def is_adjacent_swap(a: str, b: str) -> bool:
 class DuplicateInvoice:
     id = 'P0_DUPLICATE_INVOICE'
     title = 'فاکتور تکراری و مشابه'
-    version = '1.4.0'
+    version = '1.5.0'
     kind = 'invoice'
 
     def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
         by_supplier = defaultdict(list)
+        given = running_series(rows)
         for r in rows:
             key = invoice_key(r.get('invoice_number', ''))
             if key:
-                inv = {'r': r, 'key': key, 'base': suffix_base(r.get('invoice_number', '')),
-                       'amount': parse_amount(r.get('total_amount'))}
+                typed = r.get('_file') not in given and not TAX_ID.fullmatch(key)
+                inv = {'r': r, 'key': key, 'base': suffix_base(r.get('invoice_number', '')) if typed else None,
+                       'amount': parse_amount(r.get('total_amount')), 'typed': typed}
                 by_supplier[supplier_key(r)].append(inv)
         findings, seen = [], set()
         for supplier, all_invoices in by_supplier.items():
@@ -79,8 +104,9 @@ class DuplicateInvoice:
                 candidates = [(b, 'same') for b in by_key[a['key']]]
                 if loose and a['base']:
                     candidates += [(b, 'suffix') for b in by_key.get(a['base'], [])]
-                if loose:
-                    candidates += [(b, 'swap') for b in by_sig[''.join(sorted(a['key']))] if is_adjacent_swap(a['key'], b['key'])]
+                if loose and a['typed']:
+                    candidates += [(b, 'swap') for b in by_sig[''.join(sorted(a['key']))]
+                                   if b['typed'] and is_adjacent_swap(a['key'], b['key'])]
                 for b, match in candidates:
                     if a is b or a['amount'] is None or b['amount'] is None or a['amount'] <= 0 or b['amount'] <= 0:
                         continue
