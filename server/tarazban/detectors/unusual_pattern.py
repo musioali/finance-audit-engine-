@@ -1,5 +1,4 @@
-"""
-Invoices whose combination of numbers is rare in this company's own data (Isolation Forest).
+"""Invoices whose combination of numbers is rare in this company's own data (Isolation Forest).
 
 No rule says what to look for. The model splits the invoices at random again and again: an ordinary
 invoice sits among many like it and takes many splits to stand alone, a rare one is cut off in a few.
@@ -18,13 +17,14 @@ from .. import features as feats
 
 MIN_INVOICES = 1000  # with fewer, "rare" means little
 TREES = 200
+SEEDS = range(5)  # average several forests so borderline rows do not jump in and out on one random seed
 SCORE_MIN = 0.65  # isolation score; about 0.5 is ordinary, near 1 is cut off at once
 SHARE_MAX = 0.001  # and never more than this share of the invoices (1 in 1,000)
 REASON_SHARE = 0.05  # a number is named as a reason when at most this share of invoices is as extreme
 NAMES = list(feats.FEATURES)
 
 
-def isolation_scores(x: np.ndarray) -> np.ndarray:
+def isolation_scores(x: np.ndarray, seeds=SEEDS) -> np.ndarray:
     """How quickly random splits cut each row off: about 0.5 is ordinary, near 1 is cut off at once."""
     # only one side of most numbers matters to an auditor (an invoice far smaller than usual, or less
     # round, is not a warning), so the model sees the ordinary side folded onto the middle value
@@ -35,7 +35,11 @@ def isolation_scores(x: np.ndarray) -> np.ndarray:
             seen[:, j] = np.maximum(seen[:, j], middle[j])
         elif side == 'low':
             seen[:, j] = np.minimum(seen[:, j], middle[j])
-    return -IsolationForest(n_estimators=TREES, random_state=0).fit(seen).score_samples(seen)
+    scores = [
+        -IsolationForest(n_estimators=TREES, random_state=seed).fit(seen).score_samples(seen)
+        for seed in seeds
+    ]
+    return np.mean(scores, axis=0)
 
 
 def _share(column: np.ndarray, value: float, side: str) -> float:
