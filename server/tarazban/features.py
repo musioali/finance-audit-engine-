@@ -46,6 +46,7 @@ class Invoice:
     same_day: int
     busy_day: int  # the supplier's invoice count on a busy billing day
     vector: list[float]
+    placeholder: bool = False  # «مشتری نقدی» and the like: the supplier-relative numbers are not known
 
 
 def significant_digits(amount: float) -> int:
@@ -63,6 +64,16 @@ def build(profiles: dict) -> list[Invoice]:
     for key, p in profiles.items():
         dated = [(d, a, r) for d, a, r in p.invoices if d is not None]
         if not dated:
+            continue
+        if p.placeholder:
+            # many unrelated buyers under one name: no usual amount, gap or busy day of its own, so those numbers
+            # stay ordinary and only the company-wide ones (size, roundness against the company, the date) can stand out
+            for day, amount, record in dated:
+                digits = significant_digits(amount)
+                vector = [0.0, math.log10(amount), company_digits - digits, math.log1p(day - data_start + 365), 0.0, 0.0,
+                          1.0 if weekday(day) == 6 else 0.0, 1.0 if days_to_year_end(day) < YEAR_END_DAYS else 0.0]
+                out.append(Invoice(record, key, day, amount, None, digits, company_digits, False, None, None, None,
+                                   1, 1, vector, placeholder=True))
             continue
         per_day: dict[int, int] = {}
         for d, _, _ in dated:

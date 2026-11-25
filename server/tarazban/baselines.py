@@ -11,7 +11,7 @@ the same profiles, so what counts as "normal" is decided in one place.
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from .detectors import median, supplier_key
+from .detectors import median, placeholder, supplier_key
 from .text import day_number, parse_amount
 
 ROUTINE_MIN_DAYS = 4  # an amount billed on at least this many different days is part of the supplier's routine
@@ -30,6 +30,7 @@ class Supplier:
     # (day or None, amount, record id) of each invoice with a positive amount, in date order
     invoices: list[tuple[float | None, float, int]] = field(default_factory=list)
     routines: dict[float, Routine] = field(default_factory=dict)
+    placeholder: bool = False  # not a real party («مشتری نقدی», no name): no normal behaviour to learn
 
 
 def learn(rows: dict[str, list[dict]]) -> dict[str, Supplier]:
@@ -43,7 +44,8 @@ def learn(rows: dict[str, list[dict]]) -> dict[str, Supplier]:
         key = supplier_key(r)
         day = day_number(r.get('invoice_date'))
         profiles[key].invoices.append((day, amount, r['_id']))
-        if day is not None:
+        profiles[key].placeholder = placeholder(r)
+        if day is not None and not profiles[key].placeholder:
             days_of[key][amount].append(day)
 
     for key, p in profiles.items():

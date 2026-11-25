@@ -52,7 +52,7 @@ def _share(column: np.ndarray, value: float, side: str) -> float:
 class UnusualPattern:
     id = 'P0_UNUSUAL_PATTERN'
     title = 'ترکیب نادر در فاکتور'
-    version = '1.0.0'
+    version = '1.1.0'
     kind = 'invoice'
     supplementary = True
 
@@ -80,7 +80,8 @@ class UnusualPattern:
         rare = sorted(
             (_share(columns[:, j], vector[j], side), name) for j, (name, side) in enumerate(feats.FEATURES.items())
         )
-        unknown = {'times_usual': inv.usual is None, 'supplier_age': inv.age is None, 'gap_vs_usual': not inv.usual_gap}
+        unknown = {'times_usual': inv.usual is None, 'supplier_age': inv.age is None, 'gap_vs_usual': not inv.usual_gap,
+                   'same_day': inv.placeholder}
         rare = [(s, n) for s, n in rare if not unknown.get(n)]
         picked = [(s, n) for s, n in rare if s <= REASON_SHARE] or rare[:1]
         out = []

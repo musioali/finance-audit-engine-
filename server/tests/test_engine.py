@@ -192,6 +192,21 @@ class Engine(unittest.TestCase):
         self.assertEqual(out['p2p_chain'][0]['source_file'], 'bahman.csv')
         self.assertIn('۸ برابر', out['summary_fa'])
 
+    def test_cash_customer_and_no_name_are_not_parties_with_a_normal(self):
+        rows = [INV_HEAD]
+        for i in range(30):  # many unrelated buyers under one name, small and large
+            rows.append(f'N-{i},{1000 + i},,10000,مشتري نقدي,{from_mehr(i)},{(5 + (i * 7) % 11) * 1_000_000},W')
+            rows.append(f'D-{i},{2000 + i},,,-,{from_mehr(i)},{(5 + (i * 3) % 13) * 1_000_000},W')
+        rows += [
+            f'N-X,1100,,10000,مشتري نقدي,{from_mehr(31)},900000000,W',  # 100 times the others: one big buyer
+            f'D-X,2100,,,-,{from_mehr(31)},700000000,W',
+            f'N-Y,1013,,10000,مشتري نقدي,{from_mehr(13)},12000000,W',  # 1031 / 1013 swapped, same amount: two buyers
+            f'N-Z,1031,,10000,مشتري نقدي,{from_mehr(14)},12000000,W',
+        ]
+        self.send('sales.csv', rows)
+        self.assertEqual(self.alerts('P0_AMOUNT_OUTLIER'), [])
+        self.assertEqual(self.alerts('P0_DUPLICATE_INVOICE'), [])
+
     def test_a_fixed_fee_does_not_make_the_suppliers_other_invoices_look_unusual(self):
         rows = [INV_HEAD]
         for w in range(20):  # a weekly 12M fee, and between fees ordinary invoices of 50 to 70M

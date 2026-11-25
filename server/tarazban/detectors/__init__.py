@@ -12,9 +12,16 @@ and list it in DETECTORS. Raise `version` whenever what it finds changes: each l
 the version it was made on. A detector with `supplementary = True` (a model that looks at everything)
 reports only rows that no other detector reports.
 """
+import re
 from dataclasses import dataclass, field
 
 from ..text import norm_text
+
+# A party that is not one: Sepidar's «مشتری نقدی» or «مشتری وبسایت», a dash where the tax system has no buyer,
+# no name at all. Many unrelated people share it, so it has no normal behaviour of its own.
+PLACEHOLDER = re.compile(
+    r'^([-_.0]+|نامشخص|متفرقه|سایر|عمومی|نقدی)$'
+    r'|(مشتری|مشتریان|خریدار|فروشنده|تامین کننده|طرف حساب|فروش)( های)? ?(نقدی|عمومی|متفرقه|سایر|گذری|وب ?سایت|اینترنتی|آنلاین)')
 
 
 @dataclass
@@ -47,6 +54,11 @@ class Finding:
 
 def supplier_key(r: dict) -> str:
     return norm_text(r.get('supplier_id') or r.get('supplier_name')).upper()
+
+
+def placeholder(r: dict) -> bool:
+    name = norm_text(r.get('supplier_name') or r.get('supplier_id')).replace('أ', 'ا')
+    return not name or bool(PLACEHOLDER.search(name))
 
 
 def supplier_label(r: dict) -> str:

@@ -39,7 +39,7 @@ def is_adjacent_swap(a: str, b: str) -> bool:
 class DuplicateInvoice:
     id = 'P0_DUPLICATE_INVOICE'
     title = 'فاکتور تکراری و مشابه'
-    version = '1.3.0'
+    version = '1.4.0'
     kind = 'invoice'
 
     def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
@@ -68,15 +68,19 @@ class DuplicateInvoice:
                     continue
                 invoices.append(inv)
             routines = profiles[supplier].routines if supplier in profiles else {}
+            # under «مشتری نقدی» and the like the invoices are many unrelated people's: a suffix or a swap between
+            # two of them means nothing, only the same number twice does
+            loose = not (supplier in profiles and profiles[supplier].placeholder)
             by_key, by_sig = defaultdict(list), defaultdict(list)
             for inv in invoices:
                 by_key[inv['key']].append(inv)
                 by_sig[''.join(sorted(inv['key']))].append(inv)
             for a in invoices:
                 candidates = [(b, 'same') for b in by_key[a['key']]]
-                if a['base']:
+                if loose and a['base']:
                     candidates += [(b, 'suffix') for b in by_key.get(a['base'], [])]
-                candidates += [(b, 'swap') for b in by_sig[''.join(sorted(a['key']))] if is_adjacent_swap(a['key'], b['key'])]
+                if loose:
+                    candidates += [(b, 'swap') for b in by_sig[''.join(sorted(a['key']))] if is_adjacent_swap(a['key'], b['key'])]
                 for b, match in candidates:
                     if a is b or a['amount'] is None or b['amount'] is None or a['amount'] <= 0 or b['amount'] <= 0:
                         continue

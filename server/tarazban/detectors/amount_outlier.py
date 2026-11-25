@@ -29,13 +29,15 @@ MIN_SPREAD = 0.1  # a supplier who always bills the same amount still gets this 
 class AmountOutlier:
     id = 'P0_AMOUNT_OUTLIER'
     title = 'مبلغ غیرعادی برای این تأمین‌کننده'
-    version = '1.2.0'
+    version = '1.3.0'
     kind = 'invoice'
 
     def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
         by_id = {r['_id']: r for r in rows}
         findings = []
         for profile in profiles.values():
+            if profile.placeholder:  # many unrelated buyers under one name: no "usual" amount to compare with
+                continue
             others = [inv for inv in profile.invoices if inv[1] not in profile.routines]
             pool = others if len(others) >= HISTORY_MIN else profile.invoices
             seen = []
