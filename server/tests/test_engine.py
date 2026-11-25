@@ -10,7 +10,7 @@ import time
 import unittest
 from datetime import datetime
 
-from tarazban import demo, learning, pipeline
+from tarazban import demo, learning, mapping, pipeline
 from tarazban.store import connect
 from tarazban.text import day_number, norm_text, parse_amount, read_csv, weekday
 
@@ -388,6 +388,21 @@ class Engine(unittest.TestCase):
         second = self.send('sepidar-2.csv', [head, '۱۱,F-77-B,S1,شرکت الف,1404/03/04,"50,000,000",PO-3'])
         self.assertEqual(second['status'], 'done')
         self.assertEqual(len(self.alerts('P0_DUPLICATE_INVOICE')), 1)
+
+    def test_sepidar_and_tax_system_columns_are_recognised(self):
+        sepidar = mapping.suggest(['جمع كل به ارز پايه', 'جمع خالص به ارز پايه', 'شماره', 'شماره فاكتور', 'تاريخ',
+                                   'كد تأمين كننده', 'عنوان تأمين كننده', 'جمع خالص'])['mappings']['invoice']
+        self.assertEqual(sepidar, {  # «جمع کل» is before tax in Sepidar; the total with tax is «جمع خالص»
+            'invoice_number': 'شماره فاكتور', 'total_amount': 'جمع خالص به ارز پايه', 'invoice_date': 'تاريخ',
+            'supplier_id': 'كد تأمين كننده', 'supplier_name': 'عنوان تأمين كننده', 'invoice_id': 'شماره'})
+        sales = mapping.suggest(['✓', 'شماره', 'تاريخ', 'كد مشتري', 'مشتري', 'كل', 'ماليات', 'خالص', 'وضعيت'])
+        self.assertTrue(sales['complete'])
+        self.assertEqual(sales['mappings']['invoice']['total_amount'], 'خالص')
+        tax = mapping.suggest(['شماره مالیاتی صورت‌حساب', 'مجموع صورت‌حساب', 'تاریخ صدور صورت‌حساب',
+                               'شناسه هویتی فروشنده/ عرضه کننده واسط کالا و خدمت/ حق‌العملکار',
+                               'نام فروشنده/ عرضه کننده واسط کالا و خدمت/ حق‌العملکار', 'شماره مالیاتی صورت‌حساب مرجع'])
+        self.assertEqual(tax['mappings']['invoice']['invoice_number'], 'شماره مالیاتی صورت‌حساب')
+        self.assertEqual(len(tax['mappings']['invoice']), 5)
 
     def test_a_mapping_without_a_needed_field_is_refused(self):
         first = self.send('odd.csv', ['ستون یک,ستون دو', 'a,1'])

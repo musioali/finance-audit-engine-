@@ -29,10 +29,16 @@ class Kind:
 
 
 SUPPLIER_ID = Field('supplier_id', 'کد تأمین‌کننده', aliases=(
-    'vendor_id', 'supplier_code', 'vendor_code', 'کد تامین کننده', 'کد طرف حساب', 'کد فروشنده', 'کد تفصیلی'))
+    'vendor_id', 'supplier_code', 'vendor_code', 'کد تامین کننده', 'کد طرف حساب', 'کد فروشنده', 'کد تفصیلی',
+    'کد مشتری',  # Sepidar's sales invoices
+    # the counterparty in the tax system's e-invoice export (کارپوشه): seller on purchases, buyer on sales
+    'شناسه هویتی فروشنده/ عرضه کننده واسط کالا و خدمت/ حق‌العملکار',
+    'شناسه هویتی خریدار/ عرضه کننده واسط کالا و خدمت/ حق‌العملکار'))
 SUPPLIER_NAME = Field('supplier_name', 'نام تأمین‌کننده', aliases=(
     'vendor_name', 'supplier', 'vendor', 'نام تامین کننده', 'تامین کننده', 'نام طرف حساب', 'طرف حساب',
-    'نام فروشنده', 'فروشنده'))
+    'نام فروشنده', 'فروشنده', 'عنوان تامین کننده', 'مشتری',
+    'نام فروشنده/ عرضه کننده واسط کالا و خدمت/ حق‌العملکار',
+    'نام خریدار/ عرضه کننده واسط کالا و خدمت/ حق‌العملکار'))
 WAREHOUSE = Field('warehouse_code', 'انبار', aliases=('warehouse', 'کد انبار', 'انبار'))
 PO_ID = Field('po_id', 'شمارهٔ سفارش خرید', aliases=(
     'po_number', 'po_no', 'po', 'order_id', 'شماره سفارش خرید', 'شماره سفارش', 'کد سفارش'))
@@ -42,14 +48,19 @@ INVOICE = Kind(
     label='فاکتورهای خرید',
     fields=(
         Field('invoice_number', 'شمارهٔ فاکتور', required=True, aliases=(
-            'invoice_no', 'inv_no', 'invoice', 'شماره فاکتور خرید', 'شماره فاکتور', 'شماره صورتحساب')),
+            'invoice_no', 'inv_no', 'invoice', 'شماره فاکتور خرید', 'شماره فاکتور', 'شماره صورتحساب',
+            'شماره مالیاتی صورتحساب', 'شماره')),  # «شماره» last: in Sepidar it is the software's own number
         Field('total_amount', 'مبلغ کل فاکتور', 'amount', required=True, aliases=(
-            'amount', 'total', 'invoice_amount', 'مبلغ کل', 'مبلغ فاکتور', 'جمع کل', 'مبلغ نهایی', 'مبلغ')),
-        Field('invoice_date', 'تاریخ فاکتور', 'date', aliases=('date', 'تاریخ فاکتور', 'تاریخ صورتحساب', 'تاریخ')),
+            'amount', 'total', 'invoice_amount', 'مبلغ کل', 'مبلغ فاکتور', 'جمع کل', 'مبلغ نهایی', 'مبلغ',
+            # Sepidar: «جمع خالص» is the total with tax («جمع کل به ارز پایه» is before tax); کارپوشه: «مجموع صورتحساب»
+            'جمع خالص به ارز پایه', 'جمع خالص', 'خالص', 'مجموع صورتحساب', 'مجموع صورتحساب (ریال)')),
+        Field('invoice_date', 'تاریخ فاکتور', 'date', aliases=(
+            'date', 'تاریخ فاکتور', 'تاریخ صورتحساب', 'تاریخ', 'تاریخ صدور صورتحساب')),
         SUPPLIER_ID,
         SUPPLIER_NAME,
         PO_ID,
-        Field('invoice_id', 'شناسهٔ سند در نرم‌افزار', aliases=('doc_id', 'id', 'شماره سند', 'شناسه سند', 'شناسه')),
+        Field('invoice_id', 'شناسهٔ سند در نرم‌افزار', aliases=(
+            'doc_id', 'id', 'شماره سند', 'شناسه سند', 'شناسه', 'شماره')),
         WAREHOUSE,
     ),
     core=('invoice_number', 'supplier_id', 'invoice_date', 'total_amount', 'po_id'),
