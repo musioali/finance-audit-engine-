@@ -37,6 +37,17 @@ def describe(detector: str, f: dict, where: list[str]) -> tuple[str, list[str]]:
         return f'احتمال ثبت دوبارهٔ فاکتور {n1} برای {f["supplier"]}: {how}.', why
 
     if detector == 'P0_3WAY_MATCH':
+        if f.get('supplier_summary'):
+            return (
+                f'این تأمین‌کننده هیچ سفارش خریدی ندارد ({f["supplier"]}): '
+                f'{fa(f["invoice_count"])} فاکتور به جمع {fa(f["total_amount_rials"])} ریال، '
+                f'از {fa_date(f["first_date"])} تا {fa_date(f["last_date"])}.',
+                [
+                    f'برای {f["supplier"]}، {fa(f["invoice_count"])} فاکتور بدون شمارهٔ سفارش خرید به جمع مبلغ {fa(f["total_amount_rials"])} ریال ثبت شده است.',
+                    f'اولین فاکتور در {fa_date(f["first_date"])} ({where[0]}) و آخرین فاکتور در {fa_date(f["last_date"])} ({where[-1]}) است.',
+                    'به‌جای صدور هشدار جداگانه برای هر فاکتور، یک هشدار خلاصه در سطح تأمین‌کننده ثبت شده است.',
+                ],
+            )
         return (
             f'فاکتور {f["invoice_number"]} به مبلغ {fa(f["amount_rials"])} ریال شمارهٔ سفارش خرید ندارد.',
             [
@@ -193,8 +204,14 @@ def _long(r: dict, f: dict) -> str:
 def _step_words(detector: str, step: dict, rec: dict, facts: dict) -> tuple[str, str, str | None]:
     """Label, detail line and (when not the supplier) the party, for one document in the chain."""
     role = step['role']
-    if role in ('first', 'repeat', 'no_po'):
-        label = {'first': 'فاکتور اول', 'repeat': 'فاکتور مشکوک به تکرار', 'no_po': 'فاکتور بدون سفارش خرید'}[role]
+    if role in ('first', 'repeat', 'no_po', 'no_po_first', 'no_po_last'):
+        label = {
+            'first': 'فاکتور اول',
+            'repeat': 'فاکتور مشکوک به تکرار',
+            'no_po': 'فاکتور بدون سفارش خرید',
+            'no_po_first': 'اولین فاکتور بدون سفارش خرید',
+            'no_po_last': 'آخرین فاکتور بدون سفارش خرید',
+        }[role]
         return label, f'شمارهٔ فاکتور در فایل: {rec.get("invoice_number", "")}', None
     if role == 'part':
         return 'سفارش خرید', f'{fa(step["facts"]["share_of_limit"] * 100)}٪ سقف تأیید', f'تأیید: {facts["approver"]}'
