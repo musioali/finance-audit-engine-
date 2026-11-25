@@ -1,5 +1,4 @@
-"""
-The same supplier invoice entered twice: the same number written differently, a re-entry suffix, or two
+"""The same supplier invoice entered twice: the same number written differently, a re-entry suffix, or two
 swapped digits.
 
 A suffix or a swap alone is weak evidence, and it is weaker still when the amount is one the supplier
@@ -8,12 +7,13 @@ pair is left out when the two are as far apart as the supplier's usual gap for t
 from its own history (baselines.py); the same fee twice within a couple of days is still flagged.
 """
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from ..text import day_number, parse_amount, std_digits
 from . import Finding, Step, or_none, supplier_key, supplier_label
 
 DUPLICATE_DAYS = 30  # a suffix or digit swap alone is weak: the two must also be dated this close
+NEAR_AMOUNT_RATIO = 0.01  # same invoice number with amounts within 1% counts as a near match
 
 
 def invoice_key(raw: str) -> str:
@@ -50,29 +50,41 @@ class DuplicateInvoice:
                 inv = {'r': r, 'key': key, 'base': suffix_base(r.get('invoice_number', '')),
                        'amount': parse_amount(r.get('total_amount'))}
                 by_supplier[supplier_key(r)].append(inv)
-
         findings, seen = [], set()
-        for supplier, invoices in by_supplier.items():
+        for supplier, all_invoices in by_supplier.items():
+            # drop full reversals (same invoice number + exact opposite negative row) and non-positive rows
+            reversals = Counter(
+                (inv['key'], -inv['amount'])
+                for inv in all_invoices
+                if inv['amount'] is not None and inv['amount'] < 0
+            )
+            invoices = []
+            for inv in all_invoices:
+                amt = inv['amount']
+                if amt is None or amt <= 0:
+                    continue
+                if reversals[(inv['key'], amt)] > 0:
+                    reversals[(inv['key'], amt)] -= 1
+                    continue
+                invoices.append(inv)
             routines = profiles[supplier].routines if supplier in profiles else {}
             by_key, by_sig = defaultdict(list), defaultdict(list)
             for inv in invoices:
                 by_key[inv['key']].append(inv)
                 by_sig[''.join(sorted(inv['key']))].append(inv)
-
             for a in invoices:
                 candidates = [(b, 'same') for b in by_key[a['key']]]
                 if a['base']:
                     candidates += [(b, 'suffix') for b in by_key.get(a['base'], [])]
                 candidates += [(b, 'swap') for b in by_sig[''.join(sorted(a['key']))] if is_adjacent_swap(a['key'], b['key'])]
-
                 for b, match in candidates:
-                    if a is b or a['amount'] is None or b['amount'] is None or a['amount'] <= 0:
+                    if a is b or a['amount'] is None or b['amount'] is None or a['amount'] <= 0 or b['amount'] <= 0:
                         continue
                     pair = tuple(sorted((a['r']['_id'], b['r']['_id'])))
                     if pair in seen:
                         continue
                     same_amount = a['amount'] == b['amount']
-                    near_amount = abs(a['amount'] - b['amount']) <= max(1000, 0.01 * max(a['amount'], b['amount']))
+                    near_amount = abs(a['amount'] - b['amount']) <= NEAR_AMOUNT_RATIO * max(a['amount'], b['amount'])
                     if not (near_amount if match == 'same' else same_amount):
                         continue
                     da, db = day_number(a['r'].get('invoice_date')), day_number(b['r'].get('invoice_date'))
