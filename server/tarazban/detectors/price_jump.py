@@ -10,17 +10,16 @@ PRICE_HISTORY_MIN = 3
 PRICE_HISTORY_MAX = 6
 
 # lump-sum / project units do not have a comparable per-unit price
-NON_UNIT_UNITS = {'JB', 'JOB', 'LOT', 'LS', 'LUMP SUM', 'LUMPSUM', 'پروژه', 'مقطوع', 'مورد'}
+NON_UNIT_UNITS = {'JB', 'JOB', 'LOT', 'LS', 'LUMP SUM', 'LUMPSUM'}
 
-# shipping/handling charges and accounting/continuation lines have no standard unit price
+# shipping/handling charges and accounting/continuation lines have no standard unit price. English only:
+# these lists come from one American city's orders; Persian words wait until an Iranian file with orders shows them
 NON_ITEM_PHRASES = {
     'SHIPPING', 'FREIGHT', 'POSTAGE', 'HANDLING', 'DELIVERY',
     'ACCOUNTING CHANGES', 'ACCOUNTING CHANGE', 'ADJUSTMENT', 'CONTINUE',
-    'حمل', 'کرایه', 'کرایه حمل', 'هزینه حمل', 'ارسال', 'هزینه ارسال', 'باربری', 'پست', 'اصلاحیه', 'تعدیل',
 }
 CHARGE_WORDS = {
     'SHIPPING', 'FREIGHT', 'POSTAGE', 'HANDLING', 'DELIVERY', 'CHARGE', 'CHARGES', 'FEE', 'FEES', 'AND',
-    'حمل', 'ونقل', 'نقل', 'کرایه', 'ارسال', 'هزینه', 'باربری', 'پست', 'و',
 }
 
 
@@ -29,14 +28,14 @@ def _not_unit_priced(item: str, unit: str) -> bool:
         return True
     if item in NON_ITEM_PHRASES:
         return True
-    words = [w for w in re.split(r'[\s/\-&،,.]+', item) if w]
+    words = [w for w in re.split(r'[\s/\-&,.]+', item) if w]
     return bool(words) and all(w in CHARGE_WORDS for w in words)
 
 
 class PriceJump:
     id = 'P0_PRICE_DEVIATION'
     title = 'انحراف غیرعادی قیمت خرید کالا'
-    version = '1.2.0'
+    version = '1.3.0'
     kind = 'po_line'
 
     def run(self, rows: list[dict], profiles: dict) -> list[Finding]:

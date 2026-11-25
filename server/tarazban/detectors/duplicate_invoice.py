@@ -1,4 +1,5 @@
-"""The same supplier invoice entered twice: the same number written differently, a re-entry suffix, or two
+"""
+The same supplier invoice entered twice: the same number written differently, a re-entry suffix, or two
 swapped digits.
 
 A suffix or a swap alone is weak evidence, and it is weaker still when the amount is one the supplier

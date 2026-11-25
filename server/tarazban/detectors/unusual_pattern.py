@@ -1,4 +1,5 @@
-"""Invoices whose combination of numbers is rare in this company's own data (Isolation Forest).
+"""
+Invoices whose combination of numbers is rare in this company's own data (Isolation Forest).
 
 No rule says what to look for. The model splits the invoices at random again and again: an ordinary
 invoice sits among many like it and takes many splits to stand alone, a rare one is cut off in a few.

@@ -511,7 +511,7 @@ class Engine(unittest.TestCase):
         self.assertEqual((log['actor_id'], log['actor_role_fa'], log['new_status']), ('ن. فرهادی', 'کنترلر مالی', 'FALSE_POSITIVE'))
         row = self.conn.execute('SELECT detector, version, features, note FROM decisions').fetchone()
         self.assertEqual(row['detector'], 'P0_3WAY_MATCH')
-        self.assertEqual(row['version'], '1.2.0')
+        self.assertEqual(row['version'], '1.3.0')
         self.assertEqual(json.loads(row['features']), {'amount': 7000000})
         self.assertEqual(pipeline.state(self.conn)['alerts'][0]['status'], 'FALSE_POSITIVE')
 

@@ -19,7 +19,7 @@ REGULAR_SPAN_DAYS = 14  # spread over at least two weeks so a multi-day burst is
 class InvoiceWithoutPo:
     id = 'P0_3WAY_MATCH'
     title = 'مغایرت سه‌جانبه سفارش، رسید و فاکتور'
-    version = '1.2.0'
+    version = '1.3.0'
     kind = 'invoice'
 
     def run(self, rows: list[dict], profiles: dict) -> list[Finding]:
