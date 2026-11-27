@@ -1048,6 +1048,18 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       created_at: '1404/11/28 - 10:05',
     },
     {
+      log_id: 'LOG-1404-904',
+      alert_id: 'ALT-1404-009',
+      actor_id: 'م. رضایی',
+      actor_role_fa: 'حسابرس داخلی ارشد',
+      previous_status: 'NEW',
+      new_status: 'CONFIRMED',
+      assigned_to: 'حسابرس ارشد - م. رضایی',
+      auditor_note:
+        'هر دو سند در ERP دیده شد؛ INV-DUP-008 همان فاکتور INV-001600 است که با ارقام فارسی دوباره ثبت شده بود. پرداخت دوم متوقف و سند ثبت دوم برای ابطال به واحد مالی ارجاع شد.',
+      created_at: '1404/11/28 - 10:40',
+    },
+    {
       log_id: 'LOG-1404-902',
       alert_id: 'ALT-1404-003',
       actor_id: 'ع. کاظمی',
