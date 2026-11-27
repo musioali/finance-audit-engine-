@@ -1060,6 +1060,30 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
       created_at: '1404/11/28 - 10:40',
     },
     {
+      log_id: 'LOG-1404-905',
+      alert_id: 'ALT-1404-007',
+      actor_id: 'س. محمدی',
+      actor_role_fa: 'کارشناس حسابرسی',
+      previous_status: 'NEW',
+      new_status: 'NEEDS_INFO',
+      assigned_to: 'کارشناس حسابرسی - س. محمدی',
+      auditor_note:
+        'از واحد خرید پیش‌فاکتورهای رقیب و مصوبهٔ کمیسیون معاملات سفارش PO-PRC-004 خواسته شد؛ تا رسیدن پاسخ، پرداخت این سفارش نگه داشته شد.',
+      created_at: '1404/11/28 - 11:30',
+    },
+    {
+      log_id: 'LOG-1404-906',
+      alert_id: 'ALT-1404-010',
+      actor_id: 'س. محمدی',
+      actor_role_fa: 'کارشناس حسابرسی',
+      previous_status: 'NEW',
+      new_status: 'IN_REVIEW',
+      assigned_to: 'کارشناس حسابرسی - س. محمدی',
+      auditor_note:
+        'استعلام شناسهٔ ملی و مدارک ثبت تأمین‌کنندهٔ SUP-0291 و سابقهٔ دسترسی کاربر USR-027 از واحد فناوری اطلاعات درخواست شد.',
+      created_at: '1404/11/28 - 11:45',
+    },
+    {
       log_id: 'LOG-1404-902',
       alert_id: 'ALT-1404-003',
       actor_id: 'ع. کاظمی',
