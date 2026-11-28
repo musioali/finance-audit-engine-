@@ -630,7 +630,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         {
           stage: 'PO',
           stage_label_fa: 'سفارش خرید (PO)',
-          record_id: 'ناموجود (NULL)',
+          record_id: 'ناموجود',
           date_str: '—',
           amount_rials: 0,
           actor_or_party: 'فاقد سفارش در سیستم خرید',
@@ -642,7 +642,7 @@ export function generateSyntheticEngineState(scaleOrders: number = 15000): Engin
         {
           stage: 'GR',
           stage_label_fa: 'رسید انبار (GR)',
-          record_id: 'ناموجود (NULL)',
+          record_id: 'ناموجود',
           date_str: '—',
           amount_rials: 0,
           actor_or_party: 'فاقد رسید تحویل کالا در انبار مشهد',
